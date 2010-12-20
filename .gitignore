@@ -1,0 +1,14 @@
+.DS_STORE
+**/.DS_STORE
+
+*swp
+**/*swp
+
+*~
+**/*~
+
+#*#
+**/#*#
+
+a.out
+**/a.out
