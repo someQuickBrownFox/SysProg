@@ -1,0 +1,46 @@
+Liebe Kommiliton(inn)en -
+
+in der Vorlesung heute haben wir heute folgende Themen und Gruppeneinteilung vereinbart:
+
+Gruppe 1: aio_read, aio_write, lio_listio
+Braune, Chornopyskyy, Groß, Gruber
+
+Gruppe 2: aio_init, aio_error, aio_return
+          sowie Signalbehandlung beim Auftraggeber
+Bauer, Hemmer, Kupfer, Ullrich
+
+Gruppe 3: aio_cancel
+Hof, Linz
+
+Gruppe 4: aio_suspend
+Cristea, Rotsch
+
+Demo- und Testprogramme werden von allen erstellt; bei Bedarf werde ich mir erlauben, hier einzelnen Gruppen konkrete Aufgaben zuzuweisen.
+
+Zum Versenden von E-Mails verwenden Sie bitte den E-Mail-Verteiler im FBI
+
+https://www2.fbi.informatik.fh-nuernberg.de/mailer/index.php/
+
+Außerdem haben wir bisher folgende Ergänzungen für struct aiocb vorgesehen:
+
+pid_t aio_pid;
+/* fuer Prozessnummer des Sohnprozesses, der den Auftrag ausführt */
+
+int aio_errno;
+
+/* 0 bei erfolgreicher Ausführung des Auftrags;
+
+   errno des Auftrags bei Fehler;
+   EINPROGRESS, falls Auftrag noch nicht abgeschlossen */
+
+struct aiocb *aio_next;
+/* Zeiger auf naechsten Auftrag fuer globale Liste */
+
+Weitere Komponenten können bei Bedarf noch definiert werden.
+In Zweifelsfragen ist der Ausschnitt aus der Single UNIX Specification, Version 3, in der Datei "aio_syscalls.pdf" zu konsultieren.
+Bitte nutzen Sie auch die Möglichkeiten des Wiki für dieses Fach!
+Falls ich etwas falsch angegeben habe, rühren Sie sich bitte!
+
+Viele Grüße
+
+R. Kern
