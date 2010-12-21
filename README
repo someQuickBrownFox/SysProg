@@ -1,1 +1,15 @@
-this is the readme file...
+=== Working with git ===
+Befor you start:
+	1. Create new branch
+		git branch -b topicbranch
+	2. Initial commit
+		git commit -am "your commit message"
+	3. Push branch
+		git push origin topicbranch
+
+Adding new files:
+	1. create new file to add
+	2. add file to repo
+		git add filename
+	3. commit 
+		git commit -am "your commit message"
