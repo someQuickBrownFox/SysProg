@@ -1,0 +1,590 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+lang="en" xml:lang="en">
+<head>
+<title>notes</title>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1"/>
+<meta name="generator" content="Org-mode"/>
+<meta name="generated" content="2010-12-21 18:13:48 CET"/>
+<meta name="author" content="Minh Hemmer"/>
+<meta name="description" content=""/>
+<meta name="keywords" content=""/>
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  html { font-family: Times, serif; font-size: 12pt; }
+  .title  { text-align: center; }
+  .todo   { color: red; }
+  .done   { color: green; }
+  .tag    { background-color: #add8e6; font-weight:normal }
+  .target { }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .right  {margin-left:auto; margin-right:0px;  text-align:right;}
+  .left   {margin-left:0px;  margin-right:auto; text-align:left;}
+  .center {margin-left:auto; margin-right:auto; text-align:center;}
+  p.verse { margin-left: 3% }
+  pre {
+	border: 1pt solid #AEBDCC;
+	background-color: #F3F5F7;
+	padding: 5pt;
+	font-family: courier, monospace;
+        font-size: 90%;
+        overflow:auto;
+  }
+  table { border-collapse: collapse; }
+  td, th { vertical-align: top;  }
+  th.right  { text-align:center;  }
+  th.left   { text-align:center;   }
+  th.center { text-align:center; }
+  td.right  { text-align:right;  }
+  td.left   { text-align:left;   }
+  td.center { text-align:center; }
+  dt { font-weight: bold; }
+  div.figure { padding: 0.5em; }
+  div.figure p { text-align: center; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size:smaller }
+  .code-highlighted {background-color:#ffff00;}
+  .org-info-js_info-navigation { border-style:none; }
+  #org-info-js_console-label { font-size:10px; font-weight:bold;
+                               white-space:nowrap; }
+  .org-info-js_search-highlight {background-color:#ffff00; color:#000000;
+                                 font-weight:bold; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+
+</head>
+<body>
+<div id="content">
+
+<h1 class="title">notes</h1>
+
+
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1 Termine </a>
+<ul>
+<li><a href="#sec-1_1">1.1 Meeting 1 </a></li>
+<li><a href="#sec-1_2">1.2 schriftliche Zwischenabsprache </a></li>
+<li><a href="#sec-1_3">1.3 Meeting 2 </a></li>
+</ul>
+</li>
+<li><a href="#sec-2">2 Tasks </a>
+<ul>
+<li><a href="#sec-2_1">2.1 Headerfiles </a>
+<ul>
+<li><a href="#sec-2_1_1">2.1.1 global: aio.h </a></li>
+<li><a href="#sec-2_1_2">2.1.2 privat: aio_init.h </a></li>
+</ul>
+</li>
+<li><a href="#sec-2_2">2.2 aio_init </a>
+<ul>
+<li><a href="#sec-2_2_1">2.2.1 globale Auftragsliste </a></li>
+<li><a href="#sec-2_2_2">2.2.2 MsgQueue </a></li>
+</ul>
+</li>
+<li><a href="#sec-2_3">2.3 aio_error </a>
+<ul>
+<li><a href="#sec-2_3_1">2.3.1 Implementierung: <i>int aio_error (struct aiocb *aiocbp)</i> </a></li>
+</ul>
+</li>
+<li><a href="#sec-2_4">2.4 aio_return </a>
+<ul>
+<li><a href="#sec-2_4_1">2.4.1 Implementierung: <i>size_t aio_return (struct aiocb *aiocbp)</i> </a></li>
+</ul>
+</li>
+<li><a href="#sec-2_5">2.5 Signale </a></li>
+</ul>
+</li>
+<li><a href="#sec-3">3 sonstige Notizen </a>
+<ul>
+<li><a href="#sec-3_1">3.1 Reading </a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4 Versionskontrolle </a>
+<ul>
+<li><a href="#sec-4_1">4.1 Webinterface </a></li>
+<li><a href="#sec-4_2">4.2 git GUI </a></li>
+<li><a href="#sec-4_3">4.3 Clone </a></li>
+<li><a href="#sec-4_4">4.4 Remote branches </a></li>
+<li><a href="#sec-4_5">4.5 Konfiguration </a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> Termine </h2>
+<div class="outline-text-2" id="text-1">
+
+
+</div>
+
+<div id="outline-container-1_1" class="outline-3">
+<h3 id="sec-1_1"><span class="section-number-3">1.1</span> Meeting 1 </h3>
+<div class="outline-text-3" id="text-1_1">
+
+<p><span class="timestamp-wrapper"><span class="timestamp-kwd">SCHEDULED: </span> <span class="timestamp">2010-12-21 Tue 14:00</span></span><br/>
+</p><ul>
+<li>
+Grundsaetzliche gruppeninterne Planung + Absprache
+</li>
+<li>
+Koordinierung mit Prof. Kern + anderen Gruppen
+</li>
+</ul>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-1_2" class="outline-3">
+<h3 id="sec-1_2"><span class="section-number-3">1.2</span> schriftliche Zwischenabsprache </h3>
+<div class="outline-text-3" id="text-1_2">
+
+<p><span class="timestamp-wrapper"><span class="timestamp-kwd">SCHEDULED: </span> <span class="timestamp">2010-12-27 Mon 12:00</span></span><br/>
+</p><ul>
+<li>
+wahrscheinlich via ICQ
+</li>
+<li>
+Themen:
+<ul>
+<li>
+Noch fachliche Unklarheiten?
+</li>
+<li>
+Was wird wann und wie implementiert?
+</li>
+</ul>
+</li>
+</ul>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-1_3" class="outline-3">
+<h3 id="sec-1_3"><span class="section-number-3">1.3</span> Meeting 2 </h3>
+<div class="outline-text-3" id="text-1_3">
+
+<p><span class="timestamp-wrapper"><span class="timestamp-kwd">SCHEDULED: </span> <span class="timestamp">2011-01-03 Mon 12:00</span></span><br/>
+</p><ul>
+<li>
+Oertlichkeit? (Hochschule hat bis 09.01.11 geschlossen)
+</li>
+<li>
+idealerweise Test von bestehendem Code!
+</li>
+</ul>
+
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> Tasks </h2>
+<div class="outline-text-2" id="text-2">
+
+
+</div>
+
+<div id="outline-container-2_1" class="outline-3">
+<h3 id="sec-2_1"><span class="section-number-3">2.1</span> Headerfiles </h3>
+<div class="outline-text-3" id="text-2_1">
+
+
+</div>
+
+<div id="outline-container-2_1_1" class="outline-4">
+<h4 id="sec-2_1_1"><span class="section-number-4">2.1.1</span> <span class="done DONE"> DONE</span> global: aio.h </h4>
+<div class="outline-text-4" id="text-2_1_1">
+
+<ul>
+<li>
+CLOSING NOTE <span class="timestamp-wrapper"> <span class="timestamp">2010-12-21 Tue 17:55</span></span> <br/>
+Headerfile wurde erstellt und ins git- sowie SVN-repo gepusht
+</li>
+</ul>
+
+<p><span class="timestamp-wrapper"><span class="timestamp-kwd">CLOSED: </span> <span class="timestamp">2010-12-21 Tue 17:54</span></span><br/>
+</p><ul>
+<li>
+struct aio_cb
+</li>
+<li>
+struct sigevent
+</li>
+<li>
+Signalhandling (Prototyp sigHandler)
+</li>
+<li>
+Prototypen aller vom Benutzer genutzten Funktionen (aio_*)
+</li>
+</ul>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-2_1_2" class="outline-4">
+<h4 id="sec-2_1_2"><span class="section-number-4">2.1.2</span> <span class="todo TODO"> TODO</span> privat: aio_init.h </h4>
+<div class="outline-text-4" id="text-2_1_2">
+
+<ul>
+<li>
+Pointer auf Head der Auftragsliste (<b>aiocbHead</b>)
+</li>
+<li>
+MsgQueue
+</li>
+</ul>
+
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-2_2" class="outline-3">
+<h3 id="sec-2_2"><span class="section-number-3">2.2</span> aio_init </h3>
+<div class="outline-text-3" id="text-2_2">
+
+<ul>
+<li>
+Ablauf:
+<ol>
+<li>
+Initialisierung der <b>Auftragsliste</b> (<i>C-Standardlibrary</i> !)
+</li>
+<li>
+Initialisierung der <b>MsgQueue</b>
+</li>
+</ol>
+</li>
+</ul>
+
+
+
+</div>
+
+<div id="outline-container-2_2_1" class="outline-4">
+<h4 id="sec-2_2_1"><span class="section-number-4">2.2.1</span> globale Auftragsliste </h4>
+<div class="outline-text-4" id="text-2_2_1">
+
+<ul>
+<li id="sec-2_2_1_1"><span class="todo TODO"> TODO</span> Listenverwaltung [0/2] <br/>
+<ul>
+<li>
+<b>[<span style="visibility:hidden;">X</span>]</b> passende Loesung fuer verkettete Liste finden (<i>C-STL</i> !)
+</li>
+<li>
+<b>[<span style="visibility:hidden;">X</span>]</b> leere Liste von aiocb-Strukten initialisieren
+</li>
+</ul>
+
+
+</li>
+</ul>
+</div>
+
+</div>
+
+<div id="outline-container-2_2_2" class="outline-4">
+<h4 id="sec-2_2_2"><span class="section-number-4">2.2.2</span> MsgQueue </h4>
+<div class="outline-text-4" id="text-2_2_2">
+
+<ul>
+<li id="sec-2_2_2_1"><span class="todo TODO"> TODO</span> Einrichten der MsgQueue <br/>
+
+</li>
+</ul>
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-2_3" class="outline-3">
+<h3 id="sec-2_3"><span class="section-number-3">2.3</span> aio_error </h3>
+<div class="outline-text-3" id="text-2_3">
+
+<ul>
+<li>
+Beschreibung:
+<ul>
+<li>
+Parameter: Pointer auf die gewuenschte aiocb-Struktur
+</li>
+<li>
+Auslesen und Zurueckliefern des jeweiligen aio_errno-Feldes
+</li>
+</ul>
+</li>
+</ul>
+
+
+
+</div>
+
+<div id="outline-container-2_3_1" class="outline-4">
+<h4 id="sec-2_3_1"><span class="section-number-4">2.3.1</span> <span class="todo TODO"> TODO</span> Implementierung: <i>int aio_error (struct aiocb *aiocbp)</i> </h4>
+<div class="outline-text-4" id="text-2_3_1">
+
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-2_4" class="outline-3">
+<h3 id="sec-2_4"><span class="section-number-3">2.4</span> aio_return </h3>
+<div class="outline-text-3" id="text-2_4">
+
+<ul>
+<li>
+Beschreibung:
+<ul>
+<li>
+liefert Anzahl der gelesenen Bytes
+</li>
+<li>
+haengt Kontrollblock wieder aus der Liste aus
+</li>
+</ul>
+</li>
+</ul>
+
+
+
+</div>
+
+<div id="outline-container-2_4_1" class="outline-4">
+<h4 id="sec-2_4_1"><span class="section-number-4">2.4.1</span> Implementierung: <i>size_t aio_return (struct aiocb *aiocbp)</i> </h4>
+<div class="outline-text-4" id="text-2_4_1">
+
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-2_5" class="outline-3">
+<h3 id="sec-2_5"><span class="section-number-3">2.5</span> Signale </h3>
+<div class="outline-text-3" id="text-2_5">
+
+<ul>
+<li>
+nur ein Signal: <b>SIGUSR1</b>
+<ul>
+<li>
+daraufhin: Auslesen der MsgQueue und Manipulation des Kontrollblocks (Setzen von Werten, Lesen bzw. Schreiben des Puffers)
+</li>
+</ul>
+</li>
+</ul>
+
+<ul>
+<li id="sec-2_5_1"><span class="todo TODO"> TODO</span> Implementierung des Signalhandlers <br/>
+<ul>
+<li>
+vgl. Prototyp in aio.h
+</li>
+</ul>
+
+</li>
+</ul>
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> sonstige Notizen </h2>
+<div class="outline-text-2" id="text-3">
+
+
+</div>
+
+<div id="outline-container-3_1" class="outline-3">
+<h3 id="sec-3_1"><span class="section-number-3">3.1</span> <span class="todo TODO"> TODO</span> Reading </h3>
+<div class="outline-text-3" id="text-3_1">
+
+<ul>
+<li>
+Signalhandling
+</li>
+<li>
+Messagequeues
+</li>
+</ul>
+
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> Versionskontrolle </h2>
+<div class="outline-text-2" id="text-4">
+
+
+</div>
+
+<div id="outline-container-4_1" class="outline-3">
+<h3 id="sec-4_1"><span class="section-number-3">4.1</span> Webinterface </h3>
+<div class="outline-text-3" id="text-4_1">
+
+<ul>
+<li>
+<a href="https://github.com/someQuickBrownFox/SysProg">https://github.com/someQuickBrownFox/SysProg</a>
+</li>
+</ul>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-4_2" class="outline-3">
+<h3 id="sec-4_2"><span class="section-number-3">4.2</span> git GUI </h3>
+<div class="outline-text-3" id="text-4_2">
+
+<ul>
+<li>
+gitk
+</li>
+</ul>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-4_3" class="outline-3">
+<h3 id="sec-4_3"><span class="section-number-3">4.3</span> Clone </h3>
+<div class="outline-text-3" id="text-4_3">
+
+<ul>
+<li>
+Initialer Clone des repository:
+
+
+
+<pre class="example">git clone git@github.com:someQuickBrownFox/SysProg.git
+</pre>
+
+
+</li>
+</ul>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-4_4" class="outline-3">
+<h3 id="sec-4_4"><span class="section-number-3">4.4</span> Remote branches </h3>
+<div class="outline-text-3" id="text-4_4">
+
+<ul>
+<li>
+Remote branch hinzufuegen:
+
+
+
+<pre class="example">git remote add origin git@github.com:someQuickBrownFox/SysProg.git
+</pre>
+
+
+</li>
+</ul>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-4_5" class="outline-3">
+<h3 id="sec-4_5"><span class="section-number-3">4.5</span> Konfiguration </h3>
+<div class="outline-text-3" id="text-4_5">
+
+<ul>
+<li>
+.git/config
+
+
+
+<pre class="example">[core]
+    repositoryformatversion = 0
+    filemode = true
+    bare = false
+    logallrefupdates = true
+[user]
+    name="someQuickBrownFox"
+    email="somequickbrownfox@googlemail.com"
+[remote "origin"]
+    fetch = +refs/heads/*:refs/remotes/origin/*
+    url = git@github.com:someQuickBrownFox/SysProg.git
+[branch "master"]
+    remote = origin
+    merge = refs/heads/master
+</pre>
+
+
+
+</li>
+</ul>
+
+
+<hr/>
+<p>
+<a href="#sec-1">TOC</a>
+
+</p>
+<hr/>
+
+</div>
+</div>
+</div>
+<div id="postamble">
+<p class="author"> Author: Minh Hemmer
+</p>
+<p class="date"> Date: 2010-12-21 18:13:48 CET</p>
+<p class="creator">HTML generated by org-mode 7.3 in emacs 23</p>
+</div>
+</div>
+</body>
+</html>

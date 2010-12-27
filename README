@@ -1,4 +1,7 @@
+<<<<<<< HEAD:README
 this is the readme file...
+=======
+>>>>>>> 9beebd5661d20f003719a2c6e102dfcef607eeea:README
 === Working with git ===
 Befor you start:
 	1. Create new branch
