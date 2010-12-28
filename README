@@ -1,7 +1,3 @@
-<<<<<<< HEAD:README
-this is the readme file...
-=======
->>>>>>> 9beebd5661d20f003719a2c6e102dfcef607eeea:README
 === Working with git ===
 Befor you start:
 	1. Create new branch
@@ -17,3 +13,5 @@ Adding new files:
 		git add filename
 	3. commit 
 		git commit -am "your commit message"
+	4. push
+		git push
