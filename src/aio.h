@@ -2,6 +2,13 @@
 #define AIO_H
 #define EINPROGRESS 1 /* Auftrag noch nicht abgeschlossen */
 
+
+/* Defines fuer MSQ INIT, koennen in eingenes Headerfile raus */
+/* Globaler Schluessel für Initialisierung des MSQ-Betriebsmittels */
+#define SCHLUESSEL 	(key_t) 38266090
+/* Globaler Pufferlaenge fuer MSQ */
+#define PLNG		255
+
 /* STRUCTS */
 struct aiocb {
    int          aio_fildes;       /* Dateinummer fd */

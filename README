@@ -13,3 +13,5 @@ Adding new files:
 		git add filename
 	3. commit 
 		git commit -am "your commit message"
+	4. push
+		git push
