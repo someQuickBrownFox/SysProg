@@ -23,7 +23,7 @@ void writeCB(int setErrorCode, char *setBuffer, unsigned long whichType) {
     localHead->aio_errno = setErrorCode;
 
     /* Setzte Nutzdaten */
-    int oldSize = sizeof(localHead->aio_buf);
+    int oldSize = sizeof(localHead->aio_buf);             /* bisherige Nachrichtenlaenge (alternativ: aio_nbytes) */
 
     char *buffer = malloc(oldSize + sizeof(setBuffer));   /* Allokiere neuen Speicher */
     memcpy(buffer, localHead->aio_buf, oldSize);          /* Sichere ggf. vorhandene Pufferinhalte */
@@ -31,6 +31,7 @@ void writeCB(int setErrorCode, char *setBuffer, unsigned long whichType) {
         
     free(localHead->aio_buf);                             /* Gebe alten Speicher frei */
     localHead->aio_buf = buffer;                          /* aio_buf zeigt nun auf neuen Speicher */
+    localHead->aio_nbytes += sizeof(setBuffer);           /* Notiere Laengenangabe fuer hinzugekommene bytes */
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
