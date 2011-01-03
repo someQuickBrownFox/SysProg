@@ -12,26 +12,41 @@
 #include "aio.h"
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void writeCB(int setErrorCode, char *setBuffer, unsigned long whichType) {
+int updateCB(int setErrorCode, char *setBuffer, unsigned long whichType) {
     struct aiocb *localHead = HeadPtr;
 
     /* Suche zu getType zugehoeriges Glied */
-    while (localHead && localHead->aio_pid != whichType)
+    while (localHead && localHead->aio_pid != whichType) {
         localHead = localHead->aio_next;
+    }
+    
 
     /* Setzte Errorcode */
     localHead->aio_errno = setErrorCode;
 
-    /* Setzte Nutzdaten */
-    int oldSize = sizeof(localHead->aio_buf);             /* bisherige Nachrichtenlaenge (alternativ: aio_nbytes) */
+    /* Setzte Nutzdaten (kein Inhalt, falls aio_write()) */
+    if (localHead->aio_buf) {
+        printf ("alter Buffer: -%s-\n", localHead->aio_buf);
+        printf ("TODO: -%s-\n", setBuffer);
+        int oldSize = strlen(localHead->aio_buf);             /* bisherige Nachrichtenlaenge (alternativ: aio_nbytes) */
 
-    char *buffer = malloc(oldSize + sizeof(setBuffer));   /* Allokiere neuen Speicher */
-    memcpy(buffer, localHead->aio_buf, oldSize);          /* Sichere ggf. vorhandene Pufferinhalte */
-    memcpy(buffer+oldSize, setBuffer, sizeof(setBuffer)); /* Anhaengen der neuen Daten */
-        
-    free(localHead->aio_buf);                             /* Gebe alten Speicher frei */
-    localHead->aio_buf = buffer;                          /* aio_buf zeigt nun auf neuen Speicher */
-    localHead->aio_nbytes += sizeof(setBuffer);           /* Notiere Laengenangabe fuer hinzugekommene bytes */
+        char *buffer = malloc(oldSize + strlen(setBuffer));   /* Allokiere neuen Speicher */
+        memcpy(buffer, localHead->aio_buf, oldSize);          /* Sichere ggf. vorhandene Pufferinhalte */
+        memcpy(buffer+oldSize, setBuffer, strlen(setBuffer)); /* Anhaengen der neuen Daten */
+
+        free(localHead->aio_buf);                             /* Gebe alten Speicher frei */
+        localHead->aio_buf = buffer;                          /* aio_buf zeigt nun auf neuen Speicher */
+        localHead->aio_nbytes += strlen(setBuffer);           /* Notiere Laengenangabe fuer hinzugekommene bytes */
+        printf ("neuer Buffer: %s\n", localHead->aio_buf);
+    } else {
+        char *buffer = malloc(strlen(setBuffer));             /* Allokiere neuen Speicher */
+        memcpy(buffer, setBuffer, strlen(setBuffer));         /* Anhaengen der neuen Daten */
+
+        localHead->aio_buf = buffer;                          /* aio_buf zeigt nun auf neuen Speicher */
+        localHead->aio_nbytes += strlen(setBuffer);           /* Notiere Laengenangabe fuer hinzugekommene bytes */
+    }
+
+    return strlen(setBuffer);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -62,7 +77,16 @@ void sighand(int sig) {
 	}
 
     if (sig == SIGINT) { /* Prozessabbruch */
-        if (msgctl(msqid, IPC_RMID, NULL) == -1) /* Botschaftskanal loeschen */
+        /* Abschliessende Ausgabe */
+        struct aiocb *current = HeadPtr;
+        printf ("FINALE AUSGABE:\n");
+        while (current) {
+            printf ("%d: %s\n", current->aio_pid, current->aio_buf);
+            current = current->aio_next;
+        }
+
+        /* Botschaftskanal loeschen */
+        if (msgctl(msqid, IPC_RMID, NULL) == -1)
             perror("Fehler beim Löschen des Botschaftskanals");
         exit (1);
         
@@ -74,7 +98,7 @@ void sighand(int sig) {
 
         char errCodeString[5];               /* Error Code */
         int errCode;                         /* Error Code */
-        char payload[2042];                  /* Nachricht Nutzdaten */
+        char payload[2042] = "";             /* Nachricht Nutzdaten */
 	     
 	    /* Botschaftskanal lesen */
 	    if (msq_stat < 0)
@@ -87,9 +111,12 @@ void sighand(int sig) {
 	        printf("%d Nachrichten vorhanden...Leseversuch!\n", msq_stat);
             /* Lese _alle_ Nachrichten */
             do {
+                memset(buffer.mtext, 0, strlen(buffer.mtext)+1);
+                memset(payload, 0, strlen(payload)+1);
                 if ((blen = msgrcv(msqid, &buffer, PLEN, 0L, 0)) == -1) {
                     printf("err: Fehler beim Lesen aus Botschaftskanal\n");
                 }
+                //printf ("---%s---\n", buffer.mtext);
 
                 /* ZWEITE SCHLEIFE fuer Typ der ersten gelesenen Nachricht? */
                 
@@ -101,12 +128,11 @@ void sighand(int sig) {
 
                 /* Nutzdaten lesen */
                 if (strlen (buffer.mtext) > ERRLEN+1) {
-                    
                     strncpy(payload, buffer.mtext+ERRLEN, strlen(buffer.mtext)-ERRLEN); payload[sizeof(payload)+1] = '\0';
                     printf("%d Zeichen auf Kanal %lu empfangen: %s\n", blen, buffer.mtype, payload); /* --> aio_cb.PAYLOAD */
 
                     /* Schreibe errCode + payload in entsprechendes Glied der aio_cb-Liste */                    
-                    writeCB(errCode, payload, buffer.mtype);
+                    updateCB(errCode, payload, buffer.mtype);
 
                 }
             } while (queue_stat (msqid));
@@ -123,6 +149,21 @@ int main(int argc, char *argv[]) {
 	signal (SIGUSR1, &sighand);
 	signal (SIGUSR2, &sighand);
 	signal (SIGINT,  &sighand);
+
+    /* Lege zwei aiocb structs an (+ Verkettung)*/
+    struct aiocb cb1, cb2;
+    HeadPtr = &cb1;
+    cb1.aio_next = &cb2;
+
+    /* Nachrichtnetyp (=~ pid) */
+    cb1.aio_pid = 10;
+    cb1.aio_buf = NULL;
+    
+    cb2.aio_pid = 12;
+    cb2.aio_buf = NULL;
+    
+    cb2.aio_next = NULL;
+        
 
 	/* Empfaengerprozess*/
 	printf("Empfaengerprozess mit pid %d gestartet\n", getpid());

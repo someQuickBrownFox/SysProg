@@ -16,9 +16,8 @@ int main(int argc, char *argv[])
 {
     struct msgbuf buffer;                                    /* zu befuellende struct --> msgsnd() */
 	int msqid;                                               /* Identifikator fuer Botschaftskanal */ 
-	int blen;                                                /* Stringlaenge der zu sendenden Nachricht */ 
 	pid_t empfaenger = atoi(argv[1]);                        /* pid des Emfpaengerprozesses */ 
-	int mySignal = (atoi(argv[3]) == 1) ? SIGUSR1 : SIGUSR2; /* SIGUSR1 oder SIGUSR2 ? */
+	int mySignal = (atoi(argv[4]) == 1) ? SIGUSR1 : SIGUSR2; /* SIGUSR1 oder SIGUSR2 ? */
     printf("Signal: %d\n", mySignal);
 
 
@@ -29,22 +28,18 @@ int main(int argc, char *argv[])
 	}
 
     /* Senden vorbereiten */ 
-	blen = strlen(argv[2]) +1;
 	buffer.mtype = mySignal; /* Nachrichtentyp */ 
-	//strncat(buffer.mtext, argv[2], blen);
 
-    char getCode[3];
-    strncpy(getCode, argv[2], 2); getCode[2] = '\0';
-    sprintf(buffer.mtext, "%04d", atoi(getCode));
+    sprintf(buffer.mtext, "%04d", atoi(argv[2]));
 
-	strncat(buffer.mtext+ERRLEN, argv[2]+2, blen);
+	strncat(buffer.mtext+ERRLEN, argv[3], strlen(argv[3])+1);
 
 
 
     /* Uebermittlung via Botschaftskanal */ 
 	printf("Vor dem Senden: %s\n", buffer.mtext);
     
-	if(msgsnd(msqid, &buffer, blen, 0) == -1) {
+	if(msgsnd(msqid, &buffer, strlen(argv[3])+4, 0) == -1) {
 		printf("Fehler beim schreiben in Botschaftskanal\n");
 		exit(0);	
 	}
