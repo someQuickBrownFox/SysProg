@@ -9,7 +9,7 @@
 #include <signal.h>
 #include <string.h>
 
-#include "myHeader.h"
+#include "testHeader.h"
 
 /* Argumente: targetPID Nachricht {1, 2} */ 
 int main(int argc, char *argv[])
@@ -51,5 +51,7 @@ int main(int argc, char *argv[])
 
     /* "Benachrichtigung" des Empfaengers mittels SIGUSR1 bzw. SIGUSR2 */ 
     //
-    kill(empfaenger, mySignal); 
+    kill(empfaenger, mySignal);
+
+    return 0;
 }
