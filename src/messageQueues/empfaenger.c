@@ -126,8 +126,8 @@ void sighand(int sig) {
                 printf ("Error Code: %d\n", errCode); /* --> aio_cb.ERRORCODE */
 
 
-                /* Nutzdaten lesen */
-                if (strlen (buffer.mtext) > ERRLEN+1) {
+                /* Nutzdaten lesen (falls vorhanden) */
+                if (strlen (buffer.mtext) > ERRLEN) {
                     strncpy(payload, buffer.mtext+ERRLEN, strlen(buffer.mtext)-ERRLEN); payload[sizeof(payload)+1] = '\0';
                     printf("%d Zeichen auf Kanal %lu empfangen: %s\n", blen, buffer.mtype, payload); /* --> aio_cb.PAYLOAD */
 
@@ -165,7 +165,7 @@ int main(int argc, char *argv[]) {
     cb2.aio_next = NULL;
         
 
-	/* Empfaengerprozess*/
+	/* Epfaengerprozess*/
 	printf("Empfaengerprozess mit pid %d gestartet\n", getpid());
     while(1) {
         printf("Empfaengerprozess wartet...\n");
