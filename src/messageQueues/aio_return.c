@@ -29,6 +29,7 @@ size_t aio_return (struct aiocb *aiocbp)
     if (localHead->aio_pid == aiocbp->aio_pid) {
         retval = localHead->aio_nbytes;
 
+        /* Insgesamt mehr als ein Element? */
         if (aiocbp->aio_next) {
             HeadPtr = aiocbp->aio_next;
         } else {
@@ -43,18 +44,18 @@ size_t aio_return (struct aiocb *aiocbp)
     /* Gesuchtes Glied ist nicht erstes Element */
     while (localHead && (localHead->aio_pid != aiocbp->aio_pid)) {
         lastCB = localHead;
-        
+
+        /* kann weitergeschaltet werden? */
         if (!(localHead = localHead->aio_next)) {
             return retval;
         }
     }
 
+    /* Konnte Element letztendlich gefunden werden? */
     if (lastCB) {
         lastCB->aio_next = localHead->aio_next;
+        retval = localHead->aio_nbytes;
     }
-
-
-    retval = localHead->aio_nbytes;
 
     return retval;
 }
