@@ -1,9 +1,11 @@
 #ifndef AIO_H
 #define AIO_H
-#define EINPROGRESS 1 /* Auftrag noch nicht abgeschlossen */
 
+#include <sys/types.h>
+#include <signal.h>
 
-
+//nicht nötig da in errno.h schon definiert
+//#define EINPROGRESS 1 /* Auftrag noch nicht abgeschlossen */
 
 /* STRUCTS */
 struct aiocb {
@@ -21,9 +23,9 @@ struct aiocb {
    struct aiocb *aio_next;        /* Zeiger auf naechsten Auftrag fuer globale Liste */
 };
 
-struct aiocb *HeadPtr;
 
-/* bereits definiert */
+
+// error: redefinition of ‘struct sigevent’
 //struct sigevent { /* nur fuer Echtzeit-Signale */
 //   int           sigev_notify; /* = SIGEV_NONE oder SIGEV_SIGNAL */
 //   int           sigev_signo;  /* Signalnummer */
@@ -47,7 +49,7 @@ size_t aio_return (struct aiocb *aiocbp);
 
 int aio_error (struct aiocb *aiocbp);
 
-int aio_suspend (struct aiocb *list[], int nent, struct timeval *timeout);
+int aio_suspend (struct aiocb *list[], int nent, struct timespec *timeout);
 
 
 /* SIGNALHANDLING */

@@ -1,13 +1,11 @@
 #ifndef AIO_H
 #define AIO_H
-#define EINPROGRESS 1 /* Auftrag noch nicht abgeschlossen */
 
+#include <sys/types.h>
+#include <signal.h>
 
-/* Defines fuer MSQ INIT, koennen in eingenes Headerfile raus */
-/* Globaler Schluessel für Initialisierung des MSQ-Betriebsmittels */
-#define SCHLUESSEL 	(key_t) 38266090
-/* Globaler Pufferlaenge fuer MSQ */
-#define PLNG		255
+//nicht nötig da in errno.h schon definiert
+//#define EINPROGRESS 1 /* Auftrag noch nicht abgeschlossen */
 
 /* STRUCTS */
 struct aiocb {
@@ -26,11 +24,13 @@ struct aiocb {
 };
 
 
-struct sigevent { /* nur fuer Echtzeit-Signale */
-   int           sigev_notify; /* = SIGEV_NONE oder SIGEV_SIGNAL */
-   int           sigev_signo;  /* Signalnummer */
-   union sigval  sigev_value;  /* Signalwert */
-};
+
+// error: redefinition of ‘struct sigevent’
+//struct sigevent { /* nur fuer Echtzeit-Signale */
+//   int           sigev_notify; /* = SIGEV_NONE oder SIGEV_SIGNAL */
+//   int           sigev_signo;  /* Signalnummer */
+//   union sigval  sigev_value;  /* Signalwert */
+//};
 
 
 /* FUNKTIONEN */
@@ -49,7 +49,7 @@ size_t aio_return (struct aiocb *aiocbp);
 
 int aio_error (struct aiocb *aiocbp);
 
-int aio_suspend (struct aiocb *list[], int nent, struct timeval *timeout);
+int aio_suspend (struct aiocb *list[], int nent, struct timespec *timeout);
 
 
 /* SIGNALHANDLING */
