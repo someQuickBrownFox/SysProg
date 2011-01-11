@@ -8,7 +8,7 @@
 /* Globaler Schluessel für Initialisierung des MSQ-Betriebsmittels */
 #define SCHLUESSEL	(key_t) 38266091
 #define PLEN		2048
-#define ERRLEN		sizeof(int)
+#define ERRLEN		1
 
 int msqid = 0;
 

@@ -61,10 +61,7 @@ int updateCB(struct msgbuf *buffer, int blen) {
     if (!localHead) { return -1;}
     while (localHead->aio_pid != buffer->mtype) {
 
-        if ((localHead = localHead->aio_next))
-        {}
-        else
-        {
+        if (!(localHead = localHead->aio_next)) {
             return -1;
         }
     }
@@ -89,25 +86,23 @@ int updateCB(struct msgbuf *buffer, int blen) {
             int oldSize = strlen(localHead->aio_buf);             /* bisherige Nachrichtenlaenge (alternativ: aio_nbytes) */
 
             char *myBuffer = malloc(localHead->aio_nbytes+oldSize);   /* Allokiere neuen Speicher */
+            memset(myBuffer, 0, sizeof(myBuffer));
             memcpy(myBuffer, localHead->aio_buf, oldSize);          /* Sichere ggf. vorhandene Pufferinhalte */
 
             
 
-            memcpy(myBuffer+oldSize, buffer->mtext+ERRLEN+1,blen-ERRLEN); /* Anhaengen der neuen Daten */
-            //printf("eig: %s\n", buffer->mtext+ERRLEN+1);
-            //printf("bla: %s\n", myBuffer);
+            memcpy(myBuffer+oldSize, buffer->mtext+ERRLEN,blen-ERRLEN); /* Anhaengen der neuen Daten */
+            printf("payload: -%s-\n", myBuffer);
 
             free(localHead->aio_buf);                             /* Gebe alten Speicher frei */
             localHead->aio_buf = myBuffer;                          /* aio_buf zeigt nun auf neuen Speicher */
-            //printf ("neuer Buffer: %s\n", (char*)localHead->aio_buf);
         }
         else
         {
             localHead->aio_nbytes = blen-ERRLEN;                        /* Notiere Laengenangabe fuer hinzugekommene bytes */
             char *myBuffer = malloc(localHead->aio_nbytes);             /* Allokiere neuen Speicher */
-            memcpy(myBuffer,  buffer->mtext+ERRLEN+2, blen-ERRLEN);         /* Anhaengen der neuen Daten */
-            printf("eig: -%s-\n", buffer->mtext+ERRLEN+1);
-            printf("bla: -%s-\n", myBuffer);
+            memcpy(myBuffer,  buffer->mtext+ERRLEN, blen-ERRLEN);         /* Anhaengen der neuen Daten */
+            printf("payload: -%s-\n", myBuffer);
             localHead->aio_buf = myBuffer;                          /* aio_buf zeigt nun auf neuen Speicher */
         }
     }

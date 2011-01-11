@@ -32,17 +32,19 @@ int main(int argc, char *argv[])
     /* Senden vorbereiten */ 
         buffer.mtype = atoi(argv[4]); /* Nachrichtentyp */
 
+        memset(buffer.mtext,0,sizeof(buffer.mtext));
+        buffer.mtext[0] = (char)errCode;
 
+        strncat(buffer.mtext, argv[3], strlen(argv[3]));
+        buffer.mtext[strlen(buffer.mtext)] = '\0';
 
-        memcpy(buffer.mtext, &errCode, ERRLEN);
-
-        strncat(buffer.mtext+ERRLEN, argv[3], strlen(argv[3]));
-
-        int msgsize = ERRLEN+strlen(argv[3])+2; //ich hab keine ahnung warum +2
+        int msgsize = ERRLEN+strlen(argv[3]);
 
     /* Uebermittlung via Botschaftskanal */ 
         printf("Leange derr Nachricht: %d \n",msgsize );
-        printf("Vor dem Senden: %s\n", buffer.mtext+ERRLEN+1);
+		printf("Vor dem Senden: %s\n", buffer.mtext);
+
+        printf ("%s\n", argv[3]);
 
 
         if(msgsnd(msqid, &buffer, msgsize, 0) == -1) {

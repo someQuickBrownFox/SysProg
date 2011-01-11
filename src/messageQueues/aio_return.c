@@ -15,25 +15,42 @@
 size_t aio_return (struct aiocb *aiocbp)
 {
     struct aiocb *localHead = HeadPtr;
-    struct aiocb *myCB = NULL;
+    struct aiocb *lastCB = NULL;
     size_t retval = -1;
 
 
-    if (!localHead) { return retval;}
-    while (localHead->aio_pid != aiocbp->aio_pid)
-    {
-        myCB = localHead;
-        if ((localHead = localHead->aio_next))
-        {   }
-        else
-        {
+    /* ungueltiger Pointer */
+    if (!localHead) {
+        return retval;
+    }
+    
+
+    /* erstes Element? */
+    if (localHead->aio_pid == aiocbp->aio_pid) {
+        retval = localHead->aio_nbytes;
+
+        if (aiocbp->aio_next) {
+            HeadPtr = aiocbp->aio_next;
+        } else {
+            HeadPtr->aio_next = NULL;
+        }
+        
+        return retval;
+    }
+        
+
+    
+    /* Gesuchtes Glied ist nicht erstes Element */
+    while (localHead && (localHead->aio_pid != aiocbp->aio_pid)) {
+        lastCB = localHead;
+        
+        if (!(localHead = localHead->aio_next)) {
             return retval;
         }
     }
 
-    if (myCB)
-    {
-    myCB->aio_next = localHead->aio_next;
+    if (lastCB) {
+        lastCB->aio_next = localHead->aio_next;
     }
 
 
