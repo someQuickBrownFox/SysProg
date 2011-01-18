@@ -11,28 +11,49 @@
 #include "aioinit.h"
 #include "aio.h"
 
+/*---------------------------------------------------------
+  aio_return.c:
+  
+     - Ermittlung des Rueckgabewertes:
+       --> -1 im Fehlerfall, sonst:
+       --> Anzahl gelesener Bytes
+     - anschliessendes Aushaengen des entsprechenden Kontrollblocks aus der globalen Liste
+---------------------------------------------------------*/
+
 
 size_t aio_return (struct aiocb *aiocbp)
 {
     struct aiocb *localHead = HeadPtr;
-    struct aiocb *lastCB = NULL;
+    struct aiocb *predecessorCB = NULL;
     size_t retval = -1;
 
 
-    /* ungueltiger Pointer */
-    if (!localHead) {
+    /* Pointerzuweisung nicht erfolgreich bzw. globaler HeadPtr ungueltig */
+    if (!localHead)
+    {
+        errno = EINVAL;
         return retval;
     }
     
 
-    /* erstes Element? */
-    if (localHead->aio_pid == aiocbp->aio_pid) {
+    /* gesuchter Kontrollblock == erstes Listenelement? */
+    if (localHead->aio_pid == aiocbp->aio_pid)
+    {
         retval = localHead->aio_nbytes;
 
-        /* Insgesamt mehr als ein Element? */
-        if (aiocbp->aio_next) {
+        /* War der urspruengliche aio_read()- bzw. aio_write-Aufruf erfolgreich? */
+        if (retval == -1)
+        {
+            errno = localHead->aio_errno;
+        }
+
+        /* Hat Liste insgesamt mehr als ein Element? */
+        if (aiocbp->aio_next)
+        {
             HeadPtr = aiocbp->aio_next;
-        } else {
+        }
+        else
+        {
             HeadPtr->aio_next = NULL;
         }
         
@@ -42,20 +63,33 @@ size_t aio_return (struct aiocb *aiocbp)
 
     
     /* Gesuchtes Glied ist nicht erstes Element */
-    while (localHead && (localHead->aio_pid != aiocbp->aio_pid)) {
-        lastCB = localHead;
+    while (localHead && (localHead->aio_pid != aiocbp->aio_pid))
+    {
+        predecessorCB = localHead;
 
         /* kann weitergeschaltet werden? */
-        if (!(localHead = localHead->aio_next)) {
+        if (!(localHead = localHead->aio_next))
+        {
+            /* gesuchter Kontrollblock befindet sich nicht in der Liste */
+            errno = EINVAL;
             return retval;
         }
     }
 
     /* Konnte Element letztendlich gefunden werden? */
-    if (lastCB) {
-        lastCB->aio_next = localHead->aio_next;
+    if (predecessorCB)
+    {
+        /* Aushaengen des entsprechenden Kontrollblocks aus der Liste heraus */
+        predecessorCB->aio_next = localHead->aio_next;
         retval = localHead->aio_nbytes;
+        
+        /* War der urspruengliche aio_read()- bzw. aio_write-Aufruf erfolgreich? */
+        if (retval == -1)
+        {
+            errno = localHead->aio_errno;
+        }
     }
+
 
     return retval;
 }

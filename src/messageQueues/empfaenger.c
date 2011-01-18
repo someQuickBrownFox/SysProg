@@ -28,10 +28,12 @@ int main(int argc, char *argv[]) {
 
     /* Nachrichtnetyp (=~ pid) */
     cb1.aio_pid = 10;
+    cb1.aio_lio_opcode = O_READ;
     cb1.aio_buf = NULL;
     cb1.aio_errno = EINPROGRESS;
     
     cb2.aio_pid = 12;
+    cb2.aio_lio_opcode = O_READ;
     cb2.aio_buf = NULL;
     cb2.aio_errno = EINPROGRESS;
 

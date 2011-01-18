@@ -3,9 +3,13 @@
 
 #include <sys/types.h>
 #include <signal.h>
+#include <sys/errno.h>
 
-//nicht nötig da in errno.h schon definiert
-//#define EINPROGRESS 1 /* Auftrag noch nicht abgeschlossen */
+#define O_READ 0
+#define O_WRITE 1
+#define O_BLOCK 1
+
+
 
 /* STRUCTS */
 struct aiocb {
@@ -25,25 +29,21 @@ struct aiocb {
 
 
 
-// error: redefinition of ‘struct sigevent’
-//struct sigevent { /* nur fuer Echtzeit-Signale */
-//   int           sigev_notify; /* = SIGEV_NONE oder SIGEV_SIGNAL */
-//   int           sigev_signo;  /* Signalnummer */
-//   union sigval  sigev_value;  /* Signalwert */
-//};
-
-
 /* FUNKTIONEN */
 int aio_read (struct aiocb *aiocbp);
 
 int aio_write (struct aiocb *aiocbp);
 
 int lio_listio (int mode,              /* blockierend oder nicht */
-                struct aiocb *list[],  /* Auftragsliste/-tabelle */
+                struct aiocb *aicbhp,  /* Headpointer auf verkettete Liste */
                 int nent,              /* Laenge der Auftragsliste */
                 struct sigevent *sig); /* Signal: alle erledigt */
 
 int aio_cancel (int fildes, struct aiocb *aiocbp);
+
+int aio_init();
+    
+int aio_cleanup();
 
 size_t aio_return (struct aiocb *aiocbp);
 
@@ -52,7 +52,9 @@ int aio_error (struct aiocb *aiocbp);
 int aio_suspend (struct aiocb *list[], int nent, struct timespec *timeout);
 
 
+
 /* SIGNALHANDLING */
 void sigHandler (int sig_nr); /* Akzeptiert ausschlieslich SIGUSR1*/
+
 
 #endif /* end AIO_H */
