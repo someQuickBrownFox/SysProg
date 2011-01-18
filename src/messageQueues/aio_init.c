@@ -62,7 +62,7 @@ void sighand(int sig) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-
+/* Funktion für Update einer AIOCB-Instanz */
 int updateCB(struct msgbuf *buffer, int blen) {
     struct aiocb *localHead = HeadPtr;
 
@@ -106,7 +106,7 @@ int updateCB(struct msgbuf *buffer, int blen) {
 
             /* Schreiben der Daten */
             char *myBuffer = malloc(localHead->aio_nbytes+oldSize);         /* Allokiere neuen Speicher */
-            memset(myBuffer, 0, sizeof(myBuffer));
+            memset(myBuffer, 0, sizeof(myBuffer));                          /* Saeuberung des neuen Speichers */
             
             memcpy(myBuffer, localHead->aio_buf, oldSize);                  /* Sichere ggf. bereits vorhandene Pufferinhalte */
 
@@ -114,7 +114,7 @@ int updateCB(struct msgbuf *buffer, int blen) {
             
             free(localHead->aio_buf);                                       /* Gebe alten Speicher frei */
             
-            localHead->aio_buf = myBuffer;                                  /* Zielpuffer zeigt nun auf neuen Speicher */
+            localHead->aio_buf = myBuffer;                                  /* Pufferadresse des CB zeigt nun auf neuen Speicher */
 
             /* Debug-Information */
             printf("payload: -%s-\n", myBuffer);
@@ -125,8 +125,9 @@ int updateCB(struct msgbuf *buffer, int blen) {
         {
             localHead->aio_nbytes = blen-ERRLEN;                          /* Notiere Laengenangabe im Kontrollblock */
             char *myBuffer = malloc(localHead->aio_nbytes);               /* Allokiere neuen Speicher */
-            memcpy(myBuffer,  buffer->mtext+ERRLEN, blen-ERRLEN);         /* Schreiben der neuen Daten */
-            localHead->aio_buf = myBuffer;                                /* Zielpuffer zeigt nun auf neuen Speicher */
+            memset(myBuffer, 0, sizeof(myBuffer));                        /* Saeuberung des neuen Speichers */
+			memcpy(myBuffer,  buffer->mtext+ERRLEN, blen-ERRLEN);         /* Schreiben der neuen Daten */
+            localHead->aio_buf = myBuffer;                                /* Pufferadresse des CB zeigt nun auf neuen Speicher */
 
             /* Debug-Information */
             printf("payload: -%s-\n", myBuffer);
