@@ -52,7 +52,7 @@ void sighand(int sig) {
                 /* Debug-Information */
                 printf ("Gelesene Nachrichtenleange %d\n", blen);
 
-                /*  */
+                /* Korrespondierenden Control Block updaten */
                 updateCB(&buffer,blen);
 
             } while (queue_stat(msqid));

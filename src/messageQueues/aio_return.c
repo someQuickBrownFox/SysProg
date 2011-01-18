@@ -16,7 +16,7 @@
   
      - Ermittlung des Rueckgabewertes:
        --> -1 im Fehlerfall, sonst:
-       --> Anzahl gelesener Bytes
+       --> Anzahl gelesener bzw. geschriebener Bytes
      - anschliessendes Aushaengen des entsprechenden Kontrollblocks aus der globalen Liste
 ---------------------------------------------------------*/
 
