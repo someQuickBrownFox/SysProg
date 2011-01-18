@@ -34,6 +34,7 @@ int aio_error (struct aiocb *aiocbp)
     /* Suche passenden Kontrollblock */
     while (localHead->aio_pid != aiocbp->aio_pid)
     {
+        /* Weiterschalten nicht mehr moeglich */
         if (!(localHead = localHead->aio_next))
         {
             return -1;

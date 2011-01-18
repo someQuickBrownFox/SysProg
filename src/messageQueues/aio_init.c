@@ -111,14 +111,15 @@ int updateCB(struct msgbuf *buffer, int blen) {
             memcpy(myBuffer, localHead->aio_buf, oldSize);                  /* Sichere ggf. bereits vorhandene Pufferinhalte */
 
             memcpy(myBuffer+oldSize, buffer->mtext+ERRLEN,blen-ERRLEN);     /* Anhaengen der neuen Daten */
-
+            
+            free(localHead->aio_buf);                                       /* Gebe alten Speicher frei */
+            
             localHead->aio_buf = myBuffer;                                  /* Zielpuffer zeigt nun auf neuen Speicher */
 
             /* Debug-Information */
             printf("payload: -%s-\n", myBuffer);
 
-            /* Aufraeumen */
-            free(localHead->aio_buf);                                      /* Gebe alten Speicher frei */
+
         }
         else /* "Erstes" Schreiben, Kontrollblock beinhaltet noch keine Nutzdaten */
         {
