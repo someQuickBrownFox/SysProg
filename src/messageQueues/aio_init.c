@@ -221,7 +221,7 @@ int aio_init()
     if ((old_INT_Handler = signal (SIGINT,  &aio_cleanup)) == SIG_ERR)
     {
         signal (SIGUSR1, old_USR1_Handler);
-        perror("Fehler beim Zuruecksetzen der Behandlungsroutine fuer SIGUSR1");
+        perror("Fehler beim Zuruecksetzen der Behandlungsroutine fuer SIGINT");
         return -1;
     }
 
@@ -240,4 +240,3 @@ int aio_init()
 
     return 0;
 }
-
