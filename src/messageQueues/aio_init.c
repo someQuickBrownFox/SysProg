@@ -181,6 +181,9 @@ int queue_stat(int msqid)
 /* Programmende - Aufraeumarbeiten (nicht Bestandteil der vorgegebenen API)*/
 int aio_cleanup()
 {
+    /* Debug-Information */
+    printf("aio_init.c: cleanup!n");
+    
     int ret = 0;
     
     /* Zurecksetzen der Signalbehandlungsroutinen */
