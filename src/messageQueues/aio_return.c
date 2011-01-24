@@ -41,13 +41,14 @@ size_t aio_return (struct aiocb *aiocbp)
     {
         retval = localHead->aio_nbytes;
 
-        /* War der urspruengliche aio_read()- bzw. aio_write-Aufruf erfolgreich? */
+        /* War der urspruengliche aio_read()- bzw. aio_write()-Aufruf erfolgreich? */
         if (retval == -1)
         {
             errno = localHead->aio_errno;
         }
 
-        /* Hat Liste insgesamt mehr als ein Element? */
+        /* Aushaengen des gefundenen Kontrollblocks bzw. Anpassung des globalen HeadPtr -
+           hat Liste insgesamt mehr als ein Element? */
         if (aiocbp->aio_next)
         {
             HeadPtr = aiocbp->aio_next;
@@ -89,7 +90,6 @@ size_t aio_return (struct aiocb *aiocbp)
             errno = localHead->aio_errno;
         }
     }
-
 
     return retval;
 }

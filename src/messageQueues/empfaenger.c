@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
     else
     {
         size_t len = aio_return(&cb1);
-        printf ("%d: %s - size %d\n", cb1.aio_pid, (char*)cb1.aio_buf, (int)len);
+        printf ("Empfaengerprozess.c: %d: %s - size %d\n", cb1.aio_pid, (char*)cb1.aio_buf, (int)len);
 
     }
 
@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
     else
     {
         size_t len = aio_return(&cb2);
-        printf ("%d: %s - size %d\n", cb2.aio_pid, (char*)cb2.aio_buf, (int)len);
+        printf ("Empfaengerprozess.c %d: %s - size %d\n", cb2.aio_pid, (char*)cb2.aio_buf, (int)len);
 
     }
 

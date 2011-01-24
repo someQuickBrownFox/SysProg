@@ -24,10 +24,11 @@ int updateCB(struct msgbuf*, int);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-/* Signalbehandlung */
+/* Signalbehandlung (wird an SIGUSR1 gebunden) */
 void sighand(int sig) {
 
-	printf("Signal %d erhalten!\n", sig);
+    /* Debug-Information */
+	printf("aio_init.c: Signal %d erhalten!\n", sig);
 
 	struct msgbuf buffer;	   /* Puffer fuer zu empfangende Nachrichten */
 	int blen;				   /* Stringlaenge der empfangenen Nachricht */
@@ -49,7 +50,7 @@ void sighand(int sig) {
 		do
 		{
 			/* Pufferinhalt sicherheitshalber loeschen */
-			memset(buffer.mtext, 0, blen);
+			memset(buffer.mtext, 0, PLEN);
 
 			/* Lese aus Botschaftskanal */
 			if ((blen = msgrcv(msqid, &buffer, PLEN, 0L, 0)) == -1)
@@ -58,19 +59,18 @@ void sighand(int sig) {
 			}
 
 			/* Debug-Information */
-			printf ("Gelesene Nachrichtenleange %d\n", blen);
+			printf ("aio_init.c: Gelesene Nachrichtenleange %d\n", blen);
 
 			/* Korrespondierenden Control Block updaten */
-			updateCB(&buffer,blen);
+			updateCB(&buffer, blen);
 
 		} while (queue_stat(msqid));
 	}
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-/* Funktion für Update einer AIOCB-Instanz */
+/* Funktion fuer Update einer AIOCB-Struktur */
 int updateCB(struct msgbuf *buffer, int blen) {
     struct aiocb *localHead = HeadPtr;
 
@@ -81,10 +81,11 @@ int updateCB(struct msgbuf *buffer, int blen) {
     }
      
     /* Suche passenden Kontrollblock */
-    while (localHead->aio_pid != (pid_t)buffer->mtype)
+    while (localHead->aio_pid != buffer->mtype)
     {
         if (!(localHead = localHead->aio_next))
         {
+            /* Letzten Kontrollblock erreicht - Suche dennoch ohne Erfolg */
             return -1;
         }
     }
@@ -100,8 +101,8 @@ int updateCB(struct msgbuf *buffer, int blen) {
 	localHead->aio_errno = buffer->mtext[0];
 	 
 	/* Debug-Information */
-	printf ("Payload Länge %d\n",  blen-ERRLEN);
-	printf ("Error Code: %d\n", localHead->aio_errno);
+	printf ("aio_init.c: Payload Länge %d\n",  blen-ERRLEN);
+	printf ("aio_init.c: Error Code: %d\n", localHead->aio_errno);
 	 
 	/* Lese- oder Schreibauftrag? */
 	if (localHead->aio_lio_opcode == O_READ) /* Leseauftrag! Schreibe empfangene Daten in entsprechenden Kontrollblock */
@@ -109,41 +110,41 @@ int updateCB(struct msgbuf *buffer, int blen) {
 		/*	Zielbuffer gueltig? */
 		if (localHead->aio_buf)
 		{
-			int oldSize = localHead->aio_nbytes;							/* ehemalige Nachrichtenlaenge */
+			int oldSize = localHead->aio_nbytes;							/* ehemalige Nachrichtenlaenge notieren */
 			localHead->aio_nbytes = localHead->aio_nbytes+blen-ERRLEN;		/* Aktualisiere Laengenangabe im Kontrollblock */
 	 
 			/* Schreiben der Daten */
-			char *myBuffer = malloc(localHead->aio_nbytes+oldSize);			/* Allokiere neuen Speicher */
-			memset(myBuffer, 0, sizeof(myBuffer));							/* Saeuberung des neuen Speichers */
+			char *newBuffer = malloc(localHead->aio_nbytes+oldSize);		/* Allokiere neuen Speicher */
+			memset(newBuffer, 0, sizeof(newBuffer));						/* Saeuberung des neuen Speichers */
 			
-			memcpy(myBuffer, localHead->aio_buf, oldSize);					/* Sichere ggf. bereits vorhandene Pufferinhalte */
+			memcpy(newBuffer, localHead->aio_buf, oldSize);					/* Sichere ggf. bereits vorhandene Pufferinhalte */
 	 
-			memcpy(myBuffer+oldSize, buffer->mtext+ERRLEN,blen-ERRLEN);		/* Anhaengen der neuen Daten */
+			memcpy(newBuffer+oldSize, buffer->mtext+ERRLEN,blen-ERRLEN);	/* Anhaengen der neuen Daten */
 			
 			free(localHead->aio_buf);										/* Gebe alten Speicher frei */
 			
-			localHead->aio_buf = myBuffer;									/* Pufferadresse des CB zeigt nun auf neuen Speicher */
+			localHead->aio_buf = newBuffer;									/* Pufferadresse des CB zeigt nun auf neuen Speicher */
 	 
 			/* Debug-Information */
-			printf("payload: -%s-\n", myBuffer);
+			printf("aio_init.c: payload: -%s-\n", newBuffer);
 	 
 	 
 		}
 		else /* "Erstes" Schreiben, Kontrollblock beinhaltet noch keine Nutzdaten */
 		{
 			localHead->aio_nbytes = blen-ERRLEN;						  /* Notiere Laengenangabe im Kontrollblock */
-			char *myBuffer = malloc(localHead->aio_nbytes);				  /* Allokiere neuen Speicher */
-			memset(myBuffer, 0, sizeof(myBuffer));						  /* Saeuberung des neuen Speichers */
-			memcpy(myBuffer,  buffer->mtext+ERRLEN, blen-ERRLEN);		  /* Schreiben der neuen Daten */
-			localHead->aio_buf = myBuffer;								  /* Pufferadresse des CB zeigt nun auf neuen Speicher */
+			char *newBuffer = malloc(localHead->aio_nbytes);			  /* Allokiere neuen Speicher */
+			memset(newBuffer, 0, sizeof(newBuffer));					  /* Saeuberung des neuen Speichers */
+			memcpy(newBuffer,  buffer->mtext+ERRLEN, blen-ERRLEN);		  /* Schreiben der neuen Daten */
+			localHead->aio_buf = newBuffer;								  /* Pufferadresse des CB zeigt nun auf neuen Speicher */
 	 
 			/* Debug-Information */
-			printf("payload: -%s-\n", myBuffer);
+			printf("aio_init.c: payload: -%s-\n", newBuffer);
 		}
 	}
 	else /* Schreibauftrag! Notiere Anzahl geschriebener Bytes in aio_nbytes des entsprechenden Kontrollblocks */
 	{
-		/* Anzahl von aiosrv geschriebener Bytes sollte sich in mtext befinden */
+		/* Anzahl von aiosrv geschriebener Bytes sollte sich in buffer.mtext befinden */
 	 
 		// der KONVENTION?? entsprechend auslesen...
 		
@@ -151,7 +152,7 @@ int updateCB(struct msgbuf *buffer, int blen) {
 	 
 	}
 	 
-	/* Gebe Anzahl der aus dem Botschaftskanal gelesener Nutzdatenbytes zurueck */
+	/* Gebe Anzahl der aus dem Botschaftskanal gelesener bzw. durch 'aiosrv' geschriebener Nutzdatenbytes zurueck */
 	return blen-ERRLEN;
 }
 
