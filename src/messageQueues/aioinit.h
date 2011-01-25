@@ -10,8 +10,7 @@
 #define PLEN		2048
 #define ERRLEN		1
 
-int msqid = 0;
-sig_t old_USR1_Handler, old_INT_Handler;
+sig_t old_USR1_Handler, old_INT_Handler, old_TERM_Handler;
 
 struct msgbuf {
     long mtype;

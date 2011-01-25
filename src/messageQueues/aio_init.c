@@ -33,9 +33,16 @@ void sighand(int sig) {
 	struct msgbuf buffer;	   /* Puffer fuer zu empfangende Nachrichten */
 	int blen;				   /* Stringlaenge der empfangenen Nachricht */
 	int msq_stat;			   /* Queue-Status */
+    int msqid;                 /* Identifikator fuer Botschaftskanal */
+    
 
 
 	/* Status des Botschaftskanals anfordern */
+    if((msqid = msgget(SCHLUESSEL, IPC_CREAT | 0600)) == -1)
+    {
+        perror("Identifikator fuer Botschaftskanal kann nicht angefordert werden\n");
+        exit(1);
+	}
 	msq_stat = queue_stat(msqid);
 	
 	if (msq_stat < 0)
@@ -61,7 +68,7 @@ void sighand(int sig) {
 			/* Debug-Information */
 			printf ("aio_init.c: Gelesene Nachrichtenleange %d\n", blen);
 
-			/* Korrespondierenden Control Block updaten */
+			/* Korrespondierenden Kontrollblock updaten */
 			updateCB(&buffer, blen);
 
 		} while (queue_stat(msqid));
@@ -110,7 +117,7 @@ int updateCB(struct msgbuf *buffer, int blen) {
 		/*	Zielbuffer gueltig? */
 		if (localHead->aio_buf)
 		{
-			int oldSize = localHead->aio_nbytes;							/* ehemalige Nachrichtenlaenge notieren */
+			size_t oldSize = localHead->aio_nbytes;							/* ehemalige Nachrichtenlaenge notieren */
 			localHead->aio_nbytes = localHead->aio_nbytes+blen-ERRLEN;		/* Aktualisiere Laengenangabe im Kontrollblock */
 	 
 			/* Schreiben der Daten */
@@ -142,15 +149,22 @@ int updateCB(struct msgbuf *buffer, int blen) {
 			printf("aio_init.c: payload: -%s-\n", newBuffer);
 		}
 	}
-	else /* Schreibauftrag! Notiere Anzahl geschriebener Bytes in aio_nbytes des entsprechenden Kontrollblocks */
+	else if (localHead->aio_lio_opcode == O_WRITE) /* Schreibauftrag! Notiere Anzahl geschriebener Bytes in aio_nbytes des entsprechenden Kontrollblocks */
 	{
-		/* Anzahl von aiosrv geschriebener Bytes sollte sich in buffer.mtext befinden */
-	 
-		// der KONVENTION?? entsprechend auslesen...
-		
+        /* Herauslesen der Anzahl von aio_write() geschriebener Bytes */
+        size_t nbytes = 0;
+        memcpy(&nbytes,  buffer->mtext+ERRLEN, sizeof(size_t));
+
 		/* Notiere in localHead->aio_nbytes, wieviel Bytes geschrieben wurden */
+        localHead->aio_nbytes = nbytes;
 	 
+        /* Debug-Information */
+        printf("aio_init.c: aio_write() hat %lu bytes geschrieben\n", localHead->aio_nbytes);
 	}
+    else /* localhead->aio_lio_opcode ist weder O_READ, noch O_WRITE - sollte nicht vorkommen! */
+    {
+        return -1;
+    }
 	 
 	/* Gebe Anzahl der aus dem Botschaftskanal gelesener bzw. durch 'aiosrv' geschriebener Nutzdatenbytes zurueck */
 	return blen-ERRLEN;
@@ -178,7 +192,8 @@ int queue_stat(int msqid)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-/* Programmende - Aufraeumarbeiten (nicht Bestandteil der vorgegebenen API)*/
+/* Programmende - manueller Aufruf;
+   Aufraeumarbeiten (nicht Bestandteil der vorgegebenen API) */
 int aio_cleanup()
 {
     /* Debug-Information */
@@ -198,18 +213,34 @@ int aio_cleanup()
         perror("Fehler beim Zuruecksetzen der Behandlungsroutine fuer SIGINT");
         ret = -1;
     }
+    
+    if((signal (SIGTERM,  old_TERM_Handler)) == SIG_ERR)
+    {
+        perror("Fehler beim Zuruecksetzen der Behandlungsroutine fuer SIGTERM");
+        ret = -1;
+    }
 
     /* Loeschen des Botschaftskanals */
-    if (msgctl(msqid, IPC_RMID, NULL) == -1)
+    int msqid = msgget(SCHLUESSEL, IPC_CREAT | 0600);
+
+    if (msqid != -1)
     {
-        perror("Fehler beim Löschen des Botschaftskanals");
-        ret = -1;
+        if (msgctl(msqid, IPC_RMID, NULL) == -1)
+        {
+            perror("Fehler beim Löschen des Botschaftskanals");
+            ret = -1;
+        }
+    }
+    else
+    {
+        perror("Identifikator fuer Botschaftskanal kann nicht angefordert werden\n");
+        exit(1);
     }
 
     return ret;
 }
 
-
+/* Behandlungsroutine fuer SIGINT und SIGTERM */
 void aio_cleanupWrapper()
 {
     int exitVal;
@@ -224,6 +255,8 @@ void aio_cleanupWrapper()
 */
 int aio_init()
 {
+    int msqid;
+    
     /* Signale an Signalabfangsroutinen binden + urspruengliche Behandlung notieren */
     if ((old_USR1_Handler = signal (SIGUSR1, &sighand)) == SIG_ERR)
     {
@@ -234,7 +267,15 @@ int aio_init()
     if ((old_INT_Handler = signal (SIGINT,  &aio_cleanupWrapper)) == SIG_ERR)
     {
         signal (SIGUSR1, old_USR1_Handler);
-        perror("Fehler beim Zuruecksetzen der Behandlungsroutine fuer SIGINT");
+        perror("Fehler beim Binden der Behandlungsroutine fuer SIGINT");
+        return -1;
+    }
+    
+    if ((old_TERM_Handler = signal (SIGTERM,  &aio_cleanupWrapper)) == SIG_ERR)
+    {
+        signal (SIGUSR1, old_USR1_Handler);
+        signal (SIGINT, old_INT_Handler);
+        perror("Fehler beim Binden der Behandlungsroutine fuer SIGTERM");
         return -1;
     }
 
@@ -244,9 +285,10 @@ int aio_init()
     {
         perror("Fehler beim Erzeugen des Botschaftskanals");
 
-        /* Zuruecksetzen der Signalbehandlung */
+        /* Zuruecksetzen der Signalbehandlungen */
         signal (SIGUSR1, old_USR1_Handler);
         signal (SIGINT,  old_INT_Handler);
+        signal (SIGTERM,  old_TERM_Handler);
 
         return -1;
     }

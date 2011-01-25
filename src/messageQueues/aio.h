@@ -9,7 +9,8 @@
 #define O_WRITE 1
 #define O_BLOCK 1
 
-
+#define LIO_WAIT   0x00
+#define LIO_NOWAIT 0x01
 
 /* STRUCTS */
 struct aiocb {
@@ -35,7 +36,7 @@ int aio_read (struct aiocb *aiocbp);
 int aio_write (struct aiocb *aiocbp);
 
 int lio_listio (int mode,              /* blockierend oder nicht */
-                struct aiocb *aicbhp,  /* Headpointer auf verkettete Liste */
+                struct aiocb *list[],  /* Auftragsliste */
                 int nent,              /* Laenge der Auftragsliste */
                 struct sigevent *sig); /* Signal: alle erledigt */
 
