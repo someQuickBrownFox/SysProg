@@ -25,7 +25,7 @@ size_t aio_return (struct aiocb *aiocbp)
 {
     struct aiocb *localHead = HeadPtr;
     struct aiocb *predecessorCB = NULL;
-    size_t retval = -1;
+    int retval = -1;
 
 
     /* Pointerzuweisung nicht erfolgreich bzw. globaler HeadPtr ungueltig */
