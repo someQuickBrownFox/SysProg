@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/ws10-sysprog/svn/!svn/ver/56/trunk/testprog-sample
+END
+aio_write_test.c
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/ws10-sysprog/svn/!svn/ver/38/trunk/testprog-sample/aio_write_test.c
+END
+aio_read_test.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/ws10-sysprog/svn/!svn/ver/41/trunk/testprog-sample/aio_read_test.c
+END
+aio_write_test_II.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/ws10-sysprog/svn/!svn/ver/56/trunk/testprog-sample/aio_write_test_II.c
+END
+main.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/ws10-sysprog/svn/!svn/ver/3/trunk/testprog-sample/main.c
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/ws10-sysprog/svn/!svn/ver/3/trunk/testprog-sample/Makefile
+END

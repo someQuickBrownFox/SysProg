@@ -1,0 +1,20 @@
+# We build all the aio stuff as a static lib (libaio.a).
+# Thus, it should be easy to use it from a number of
+# independent test programs.
+#
+# usage:
+#       make
+#               builds the lib (libaio.a) only
+#		(Is a "make debug", actually...)
+#       make all 
+#               build the lib and all test programs
+#               if they have been added below
+#       make clean
+#               cleans up lib and all test programs
+#               if they have been added below
+#
+# Additionally, there is a sample sub directory how
+# to set up a test program that makes use of the
+# libaio.a
+# And, there is a Makefile as well :)
+
