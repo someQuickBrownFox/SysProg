@@ -210,6 +210,15 @@ int aio_cleanup()
 }
 
 
+void aio_cleanupWrapper()
+{
+    int exitVal;
+    if ((exitVal = aio_cleanup()) == 0)
+        exit(0);
+    exit(1);
+}
+
+
 /* Initialisierung
    Rueckgabewert - Erfolg: 0, Fehler: -1
 */
@@ -222,7 +231,7 @@ int aio_init()
         return -1;
     }
 
-    if ((old_INT_Handler = signal (SIGINT,  &aio_cleanup)) == SIG_ERR)
+    if ((old_INT_Handler = signal (SIGINT,  &aio_cleanupWrapper)) == SIG_ERR)
     {
         signal (SIGUSR1, old_USR1_Handler);
         perror("Fehler beim Zuruecksetzen der Behandlungsroutine fuer SIGINT");
