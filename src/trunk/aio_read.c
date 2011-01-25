@@ -10,8 +10,10 @@
 
 #include "aio.h"
 #include "aioinit.h"
-
 int _sigrcvd;
+
+#define DEBUG 1
+
 
 void aio_read_sighandler(int sig_nr)
 {

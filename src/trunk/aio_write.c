@@ -142,6 +142,7 @@ int aio_write(struct aiocb *aiocbp)
                             exit(1);
                         }
                     }
+                    exit(0);
                     break;
                 default: //child process
                     while (close(pfd[1]) == -1 && errno == EINTR) {} // repeat it

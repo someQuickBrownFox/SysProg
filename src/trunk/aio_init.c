@@ -22,6 +22,7 @@
 int queue_stat(int);
 int updateCB(struct msgbuf*, int);
 
+struct aiocb *HeadPtr = NULL;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 /* Signalbehandlung (wird an SIGUSR1 gebunden) */
@@ -29,6 +30,7 @@ void sighand(int sig) {
 
     /* Debug-Information */
 	printf("aio_init.c: Signal %d erhalten!\n", sig);
+    fflush(stdout);
 
 	struct msgbuf buffer;	   /* Puffer fuer zu empfangende Nachrichten */
 	int blen;				   /* Stringlaenge der empfangenen Nachricht */
@@ -40,17 +42,17 @@ void sighand(int sig) {
 	/* Status des Botschaftskanals anfordern */
     if((msqid = msgget(SCHLUESSEL, IPC_CREAT | 0600)) == -1)
     {
-        perror("Identifikator fuer Botschaftskanal kann nicht angefordert werden\n");
+        perror("Identifikator fuer Botschaftskanal kann nicht angefordert werden");
         exit(1);
 	}
 	msq_stat = queue_stat(msqid);
 	
 	if (msq_stat < 0)
-		perror("Fehler beim Lesen des Queue-Status!\n");
+		perror("Fehler beim Lesen des Queue-Status!");
 
 	else if (msq_stat == 0)
 		/* sollte eigentlich nicht auftreten */
-		perror("Signal erhalten, jeodch MessageQueue leer!\n");
+		perror("Signal erhalten, jedoch MessageQueue leer!");
 
 	else if (msq_stat > 0)
 	{
@@ -60,18 +62,21 @@ void sighand(int sig) {
 			memset(buffer.mtext, 0, PLEN);
 
 			/* Lese aus Botschaftskanal */
-			if ((blen = msgrcv(msqid, &buffer, PLEN, 0L, 0)) == -1)
+			if ((blen = msgrcv(msqid, &buffer, sizeof(struct msgbuf), 0L, 0)) == -1)
 			{
-				perror("Fehler beim Lesen aus Botschaftskanal\n");
+				perror("1.Fehler beim Lesen aus Botschaftskanal");
+                break;
 			}
+            else
+            {
+			    /* Debug-Information */
+			    printf ("aio_init.c: Gelesene Nachrichtenleange %d\n", blen);
+                 
+			    /* Korrespondierenden Kontrollblock updaten */
+			    updateCB(&buffer, blen);
+            }
 
-			/* Debug-Information */
-			printf ("aio_init.c: Gelesene Nachrichtenleange %d\n", blen);
-
-			/* Korrespondierenden Kontrollblock updaten */
-			updateCB(&buffer, blen);
-
-		} while (queue_stat(msqid));
+		} while (queue_stat(msqid) > 0);
 	}
 }
 
@@ -237,12 +242,15 @@ int aio_cleanup()
         exit(1);
     }
 
+    /* TODO: Loeschen des Botschaftskanals der anderen komischen Gruppe */
+
     return ret;
 }
 
 /* Behandlungsroutine fuer SIGINT und SIGTERM */
-void aio_cleanupWrapper()
+void aio_cleanupWrapper(int sig)
 {
+    printf ("cleanupW: %d\n", sig);
     int exitVal;
     if ((exitVal = aio_cleanup()) == 0)
         exit(0);
@@ -279,6 +287,8 @@ int aio_init()
         return -1;
     }
 
+    printf ("aio_init.c: signalhandler gebunden!\n");
+
     
     /* Botschaftskanal einrichten oder Identifikator anfordern */
     if ((msqid = msgget(SCHLUESSEL, IPC_CREAT|0600)) == -1 )
@@ -288,7 +298,7 @@ int aio_init()
         /* Zuruecksetzen der Signalbehandlungen */
         signal (SIGUSR1, old_USR1_Handler);
         signal (SIGINT,  old_INT_Handler);
-        signal (SIGTERM,  old_TERM_Handler);
+        signal (SIGTERM, old_TERM_Handler);
 
         return -1;
     }

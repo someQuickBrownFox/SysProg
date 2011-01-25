@@ -83,9 +83,15 @@ int aiosrv_read(pid_t ppid[], int ppidlen, struct aiocb * aiocbp)
             {
                 mymsgbuf.mtext[j] = buffer[i * PLEN + j - 1];
             }
-            //printf("Sending %d bytes\n", strlen(mymsgbuf.mtext));
             msgsnd(msqid, &mymsgbuf, sizeof(struct msgbuf), 0);
-            kill(ppid[0], SIGUSR1);
+            if (kill(ppid[0], SIGUSR1) == -1)
+            {
+                printf("killing %d failed\n", ppid[0]);
+            }
+            else
+            {
+                printf("killing %d succeeded\n", ppid[0]);
+            }
             //printf("Bytes really sent: %d\n", j);
         }
 
@@ -128,7 +134,19 @@ int aiosrv_write(pid_t ppid[], int ppidlen, struct aiocb * aiocbp)
     msgsnd(msqid, &mymsgbuf, sizeof(struct msgbuf), 0);
     for (k = 0; k < ppidlen; k ++)
     {
+#ifdef DEBUG
+        printf("killing %d: ", ppid[k]);
+        if (kill(ppid[k], SIGUSR1) == -1)
+        {
+            printf("error\n");
+        }
+        else
+        {
+            printf("ok!\n");
+        }
+#else
         kill(ppid[k], SIGUSR1);
+#endif
     }
     close(aiocbp->aio_fildes);
     return 0;
@@ -178,6 +196,10 @@ int main(int argc, char* argv[])
         {
             printf("Invalid argument, expected positive integer value");
             exit(1);
+        }
+        else
+        {
+            ppidlen ++;
         }
     }
 

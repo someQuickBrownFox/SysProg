@@ -17,8 +17,7 @@ struct msgbuf {
     char mtext[PLEN];
 };
 
-struct aiocb *HeadPtr = NULL;
-
+extern struct aiocb *HeadPtr;
 
 
 

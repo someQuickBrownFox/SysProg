@@ -21,9 +21,8 @@ LIBOBJS=	aio_read.o	\
 		    aio_return.o	\
 		    aio_init.o \
 		    aio_error.o	\
-		    aio_suspend.o      \
-		    aio_cancel.o	
-	
+		    aio_suspend.o
+
 SRVOBJS=	aiosrv.o
 
 LIBAIO=libaio.a
