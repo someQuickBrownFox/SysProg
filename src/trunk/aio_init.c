@@ -30,7 +30,6 @@ void sighand(int sig) {
 
     /* Debug-Information */
 	printf("aio_init.c: Signal %d erhalten!\n", sig);
-    fflush(stdout);
 
 	struct msgbuf buffer;	   /* Puffer fuer zu empfangende Nachrichten */
 	int blen;				   /* Stringlaenge der empfangenen Nachricht */
@@ -42,17 +41,17 @@ void sighand(int sig) {
 	/* Status des Botschaftskanals anfordern */
     if((msqid = msgget(SCHLUESSEL, IPC_CREAT | 0600)) == -1)
     {
-        perror("Identifikator fuer Botschaftskanal kann nicht angefordert werden");
+        perror("Identifikator fuer Botschaftskanal kann nicht angefordert werden\n");
         exit(1);
 	}
 	msq_stat = queue_stat(msqid);
 	
 	if (msq_stat < 0)
-		perror("Fehler beim Lesen des Queue-Status!");
+		perror("Fehler beim Lesen des Queue-Status!\n");
 
 	else if (msq_stat == 0)
 		/* sollte eigentlich nicht auftreten */
-		perror("Signal erhalten, jedoch MessageQueue leer!");
+		perror("Signal erhalten, jeodch MessageQueue leer!\n");
 
 	else if (msq_stat > 0)
 	{
@@ -62,21 +61,18 @@ void sighand(int sig) {
 			memset(buffer.mtext, 0, PLEN);
 
 			/* Lese aus Botschaftskanal */
-			if ((blen = msgrcv(msqid, &buffer, sizeof(struct msgbuf), 0L, 0)) == -1)
+			if ((blen = msgrcv(msqid, &buffer, PLEN, 0L, 0)) == -1)
 			{
-				perror("1.Fehler beim Lesen aus Botschaftskanal");
-                break;
+				perror("Fehler beim Lesen aus Botschaftskanal\n");
 			}
-            else
-            {
-			    /* Debug-Information */
-			    printf ("aio_init.c: Gelesene Nachrichtenleange %d\n", blen);
-                 
-			    /* Korrespondierenden Kontrollblock updaten */
-			    updateCB(&buffer, blen);
-            }
 
-		} while (queue_stat(msqid) > 0);
+			/* Debug-Information */
+			printf ("aio_init.c: Gelesene Nachrichtenleange %d\n", blen);
+
+			/* Korrespondierenden Kontrollblock updaten */
+			updateCB(&buffer, blen);
+
+		} while (queue_stat(msqid));
 	}
 }
 
@@ -164,9 +160,9 @@ int updateCB(struct msgbuf *buffer, int blen) {
         localHead->aio_nbytes = nbytes;
 	 
         /* Debug-Information */
-        printf("aio_init.c: aio_write() hat %lu bytes geschrieben\n", localHead->aio_nbytes);
+        //printf("aio_init.c: aio_write() hat %d bytes geschrieben\n", localHead->aio_nbytes);
 	}
-    else /* localhead->aio_lio_opcode ist weder O_READ, noch O_WRITE - sollte nicht vorkommen! */
+    else /* localhead->aio_lio_opcode weder O_READ, noch O_WRITE - sollte nicht vorkommen! */
     {
         return -1;
     }
@@ -242,15 +238,12 @@ int aio_cleanup()
         exit(1);
     }
 
-    /* TODO: Loeschen des Botschaftskanals der anderen komischen Gruppe */
-
     return ret;
 }
 
 /* Behandlungsroutine fuer SIGINT und SIGTERM */
-void aio_cleanupWrapper(int sig)
+void aio_cleanupWrapper()
 {
-    printf ("cleanupW: %d\n", sig);
     int exitVal;
     if ((exitVal = aio_cleanup()) == 0)
         exit(0);
@@ -287,8 +280,6 @@ int aio_init()
         return -1;
     }
 
-    printf ("aio_init.c: signalhandler gebunden!\n");
-
     
     /* Botschaftskanal einrichten oder Identifikator anfordern */
     if ((msqid = msgget(SCHLUESSEL, IPC_CREAT|0600)) == -1 )
@@ -298,7 +289,7 @@ int aio_init()
         /* Zuruecksetzen der Signalbehandlungen */
         signal (SIGUSR1, old_USR1_Handler);
         signal (SIGINT,  old_INT_Handler);
-        signal (SIGTERM, old_TERM_Handler);
+        signal (SIGTERM,  old_TERM_Handler);
 
         return -1;
     }

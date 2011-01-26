@@ -22,6 +22,10 @@ void aiosrv_sighandler(/*int signo*/)
     exit(0);
 }
 
+void aiosrv_sighandler2()
+{
+}
+
 int aiosrv_read(pid_t ppid[], int ppidlen, struct aiocb * aiocbp)
 {
     char         * buffer;
@@ -170,6 +174,12 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
+    if (signal(SIGUSR1, aiosrv_sighandler2) == SIG_ERR)
+    {
+        printf("there be dragons eating signals and numbers");
+        exit(1);
+    }
+
     if (argc < 2)
     {
         printf("This program is not intended for usage by the real user");
@@ -281,6 +291,7 @@ int main(int argc, char* argv[])
             {
                 // i guess, we can ignore an error here
             }
+            pause();
 
             aiosrv_write(ppid, ppidlen, &cb);
             break;
@@ -290,6 +301,7 @@ int main(int argc, char* argv[])
             {
                 // i guess, we can ignore an error here
             }
+            pause();
 
             aiosrv_read(ppid, ppidlen, &cb);
             break;

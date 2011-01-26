@@ -33,8 +33,8 @@ int aio_write(struct aiocb *aiocbp)
     sig_t          sigold2;
     pid_t          sohn;
     int            pfd[2];
-    char           pidbuff1[12];
-    char           pidbuff2[12];
+    char           pidbuff1[24];
+    char           pidbuff2[24];
     int            success = 0;
     int            cdupfd;
     pid_t          ppid;
@@ -210,6 +210,25 @@ int aio_write(struct aiocb *aiocbp)
             }
 
             pause();
+            
+            if (signal(SIGUSR1, sigold1) == SIG_ERR)
+            {
+                // should not happen
+                perror("failed resetting the USR1 signal service routine");
+                errno = EINVAL;
+                return -1;
+            }
+
+            if (signal(SIGUSR2, sigold2) == SIG_ERR)
+            {
+                // should not happen
+                perror("failed resetting the USR2 signal service routine");
+                errno = EINVAL;
+                return -1;
+            }
+
+            kill(sohn, SIGUSR1);
+
             if (_sigrcvd != SIGUSR1)
             {
                 errno = EAGAIN;
@@ -223,22 +242,6 @@ int aio_write(struct aiocb *aiocbp)
             HeadPtr->aio_next = headold;
 
             break;
-    }
-
-    if (signal(SIGUSR1, sigold1) == SIG_ERR)
-    {
-        // should not happen
-        perror("failed resetting the USR1 signal service routine");
-        errno = EINVAL;
-        return -1;
-    }
-
-    if (signal(SIGUSR2, sigold2) == SIG_ERR)
-    {
-        // should not happen
-        perror("failed resetting the USR2 signal service routine");
-        errno = EINVAL;
-        return -1;
     }
 
     return success;

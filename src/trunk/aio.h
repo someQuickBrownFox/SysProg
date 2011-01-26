@@ -12,6 +12,7 @@
 #define LIO_WAIT   0x00
 #define LIO_NOWAIT 0x01
 
+
 /* STRUCTS */
 struct aiocb {
    int          aio_fildes;       /* Dateinummer fd */

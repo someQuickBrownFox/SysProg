@@ -10,10 +10,8 @@
 
 #include "aio.h"
 #include "aioinit.h"
+
 int _sigrcvd;
-
-#define DEBUG 1
-
 
 void aio_read_sighandler(int sig_nr)
 {
@@ -32,8 +30,8 @@ int aio_read(struct aiocb * aiocbp)
     struct aiocb * headold;
     int            pfd[2]; //pipe file descriptor [0] Pipe-Ausgang [1] Pipe-Eingang
     pid_t          cpid;   //child processid
-    char           pidbuff1[12];
-    char           pidbuff2[12];
+    char           pidbuff1[24];
+    char           pidbuff2[24];
     int            success = 0;
     int            cdupfd;
     int            fflags;
@@ -172,6 +170,25 @@ int aio_read(struct aiocb * aiocbp)
             }
 
             pause();
+
+            if (signal(SIGUSR1, sigold1) == SIG_ERR)
+            {
+                // should not happen
+                perror("failed resetting the USR1 signal service routine");
+                errno = EINVAL;
+                return -1;
+            }
+
+            if (signal(SIGUSR2, sigold2) == SIG_ERR)
+            {
+                // should not happen
+                perror("failed resetting the USR2 signal service routine");
+                errno = EINVAL;
+                return -1;
+            }
+
+            kill(cpid, SIGUSR1);
+
             if (_sigrcvd != SIGUSR1)
             {
                 errno = EAGAIN;
@@ -186,22 +203,6 @@ int aio_read(struct aiocb * aiocbp)
             HeadPtr->aio_next = headold;
 
             break;
-    }
-
-    if (signal(SIGUSR1, sigold1) == SIG_ERR)
-    {
-        // should not happen
-        perror("failed resetting the USR1 signal service routine");
-        errno = EINVAL;
-        return -1;
-    }
-
-    if (signal(SIGUSR2, sigold2) == SIG_ERR)
-    {
-        // should not happen
-        perror("failed resetting the USR2 signal service routine");
-        errno = EINVAL;
-        return -1;
     }
 
     return success;
