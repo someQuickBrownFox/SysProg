@@ -11,18 +11,44 @@
 #include "aioinit.h"
 #include "aio.h"
 
-/*---------------------------------------------------------
+/*---------------------------------------------------------------------------------------------
+  
   aio_init.c:
   
-     - Definition des Signalhandlings
-     - Auslesen ankommender Daten 
----------------------------------------------------------*/
+     - Definition der Signalbehandlung (fuer SIGUSR1)
+     ================================================
+       - Auslesen und ankommender Daten aus dem Botschaftskanal
+       - adaequates Updaten des entsprechenden Kontrollblocks
+
+     - Initialisierungsarbeiten
+     ==========================
+       - Einrichten der Signalbehandlung (SIGUSR1, SIGINT, SIGTERM)
+       - Einrichten des Botschaftskanals
+
+     - Aufraeumarbeiten (Aufruf: manuell und zusaetzlich auch via Signalbehandlung)
+     ==============================================================================
+       - Zuruecksetzen der jeweiligen Signalbehandlungen auf ihr urspruengliches Verhalten
+       - Loeschen des Botschaftskanals
+
+
+    FIXME:
+    - Fehlerueberpruefung bei saemtlichen malloc-Aufrufen!
+    - Ueberpruefung des Rueckgabewertes von updateCB() bei Verwendung innerhalb von sighand()
+    - exit(1) im unteren Drittel von aio_cleanup wirklich sinnvoll? (--> Rueckgabewert!)
+       
+----------------------------------------------------------------------------------------------*/
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
 
 /* Prototypen */
 int queue_stat(int);
 int updateCB(struct msgbuf*, int);
 
+
+/* Initialwert fuer globalen HeadPtr */
 struct aiocb *HeadPtr = NULL;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 /* Signalbehandlung (wird an SIGUSR1 gebunden) */
@@ -31,55 +57,60 @@ void sighand(int sig) {
     /* Debug-Information */
 	printf("aio_init.c: Signal %d erhalten!\n", sig);
 
-	struct msgbuf buffer;	   /* Puffer fuer zu empfangende Nachrichten */
-	int blen;				   /* Stringlaenge der empfangenen Nachricht */
-	int msq_stat;			   /* Queue-Status */
-    int msqid;                 /* Identifikator fuer Botschaftskanal */
+	struct msgbuf buffer;	/* Puffer fuer zu empfangende Nachrichten */
+	int blen;				/* Stringlaenge der empfangenen Nachricht */
+	int msq_stat;			/* Queue-Status */
+	int msqid;				/* Identifikator fuer Botschaftskanal */
     
 
-
-	/* Status des Botschaftskanals anfordern */
+	/* Botschaftskanal erzeugen bzw. Identifikator anfordern */
     if((msqid = msgget(SCHLUESSEL, IPC_CREAT | 0600)) == -1)
     {
-        perror("Identifikator fuer Botschaftskanal kann nicht angefordert werden\n");
+        perror("Identifikator fuer Botschaftskanal kann nicht angefordert werden");
         exit(1);
 	}
+
+	/* Status des Botschaftskanals anfordern + anschlieszende Auswertung */
 	msq_stat = queue_stat(msqid);
 	
 	if (msq_stat < 0)
-		perror("Fehler beim Lesen des Queue-Status!\n");
+		perror("Fehler beim Lesen des Queue-Status!");
 
 	else if (msq_stat == 0)
 		/* sollte eigentlich nicht auftreten */
-		perror("Signal erhalten, jeodch MessageQueue leer!\n");
+		perror("Signal SIGUSR1 erhalten, jedoch MessageQueue leer!");
 
 	else if (msq_stat > 0)
 	{
+        /* Es befinden sich Daten im Botschaftskanal - versuche, diese auszulesen! */
 		do
 		{
-			/* Pufferinhalt sicherheitshalber loeschen */
+			/* Inhalt des temporaeren Puffers sicherheitshalber loeschen */
 			memset(buffer.mtext, 0, PLEN);
 
 			/* Lese aus Botschaftskanal */
 			if ((blen = msgrcv(msqid, &buffer, PLEN, 0L, 0)) == -1)
 			{
-				perror("Fehler beim Lesen aus Botschaftskanal\n");
+				perror("Fehler beim Lesen aus Botschaftskanal");
 			}
 
 			/* Debug-Information */
 			printf ("aio_init.c: Gelesene Nachrichtenleange %d\n", blen);
 
 			/* Korrespondierenden Kontrollblock updaten */
+            /* FIXME: Rueckgabewert ueberpruefen? Reaktion, falls dieser -1 ist? */
 			updateCB(&buffer, blen);
 
-		} while (queue_stat(msqid));
+		} while (queue_stat(msqid) > 0);
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-/* Funktion fuer Update einer AIOCB-Struktur */
+/* Funktion fuer Update einer aiocb-Struktur */
 int updateCB(struct msgbuf *buffer, int blen) {
+
+    /* localHead referenziert zunaechst den ersten Kontrollblock */
     struct aiocb *localHead = HeadPtr;
 
     /* Pointerzuweisung nicht erfolgreich bzw. globaler HeadPtr ungueltig */
@@ -98,10 +129,11 @@ int updateCB(struct msgbuf *buffer, int blen) {
         }
     }
      
-    /* Sollte eigentlich nicht eintreten;
-	   Solange noch MsgQueue-Daten ankommen, sollte aio_errno eigentlich EINPROGRESS sein! */
+	/* Im Botschaftskanal wurden (noch weitere) Daten fuer einen bestimmten Auftrag uebermittelt -
+       Das Kontrollblock-Attribut aio_errno sollte daher den Wert EINPROGRESS enthalten! */
 	if (localHead->aio_errno != EINPROGRESS)
 	{
+        /* Sollte eigentlich nicht eintreten */
 		return -1;
 	}
 	 
@@ -112,46 +144,48 @@ int updateCB(struct msgbuf *buffer, int blen) {
 	printf ("aio_init.c: Payload Länge %d\n",  blen-ERRLEN);
 	printf ("aio_init.c: Error Code: %d\n", localHead->aio_errno);
 	 
-	/* Lese- oder Schreibauftrag? */
-	if (localHead->aio_lio_opcode == O_READ) /* Leseauftrag! Schreibe empfangene Daten in entsprechenden Kontrollblock */
-	{
-		/*	Zielbuffer gueltig? */
+	/* Fallunterscheidung: Lese- oder Schreibauftrag?
+       (d.h. Wurden die aus dem Botschaftskanal empfangenen Daten infolge eines aio_read()- oder aio_write()-Aufrufs gesendet? */
+	if (localHead->aio_lio_opcode == O_READ)
+	{ /* Leseauftrag! Schreibe empfangene Daten in entsprechenden Kontrollblock */
+        
+		/* Zielbuffer gueltig? */
 		if (localHead->aio_buf)
 		{
 			size_t oldSize = localHead->aio_nbytes;							/* ehemalige Nachrichtenlaenge notieren */
 			localHead->aio_nbytes = localHead->aio_nbytes+blen-ERRLEN;		/* Aktualisiere Laengenangabe im Kontrollblock */
 	 
-			/* Schreiben der Daten */
+			/* Schreiben der Nutzdaten */
 			char *newBuffer = malloc(localHead->aio_nbytes+oldSize);		/* Allokiere neuen Speicher */
-			memset(newBuffer, 0, sizeof(newBuffer));						/* Saeuberung des neuen Speichers */
+			memset(newBuffer, 0, sizeof(newBuffer));						/* Saeuberung des neuen Speichers (sicherheitshalber) */
 			
-			memcpy(newBuffer, localHead->aio_buf, oldSize);					/* Sichere ggf. bereits vorhandene Pufferinhalte */
+			memcpy(newBuffer, localHead->aio_buf, oldSize);					/* Sichere ggf. bereits vorhandene Pufferinhalte in neuen Speicher */
 	 
 			memcpy(newBuffer+oldSize, buffer->mtext+ERRLEN,blen-ERRLEN);	/* Anhaengen der neuen Daten */
 			
 			free(localHead->aio_buf);										/* Gebe alten Speicher frei */
 			
-			localHead->aio_buf = newBuffer;									/* Pufferadresse des CB zeigt nun auf neuen Speicher */
+			localHead->aio_buf = newBuffer;									/* Pufferadresse des Kontrollblocks zeigt nun auf neuen Speicher */
 	 
 			/* Debug-Information */
 			printf("aio_init.c: payload: -%s-\n", newBuffer);
-	 
-	 
 		}
-		else /* "Erstes" Schreiben, Kontrollblock beinhaltet noch keine Nutzdaten */
-		{
-			localHead->aio_nbytes = blen-ERRLEN;						  /* Notiere Laengenangabe im Kontrollblock */
+		else
+		{ /* "Erstes" Schreiben, Kontrollblock hat bisher noch keine Nutzdaten beinhaltet */
+            
+			localHead->aio_nbytes = blen-ERRLEN;						  /* Notiere Laenge der Nutzdaten im Kontrollblock */
 			char *newBuffer = malloc(localHead->aio_nbytes);			  /* Allokiere neuen Speicher */
-			memset(newBuffer, 0, sizeof(newBuffer));					  /* Saeuberung des neuen Speichers */
+			memset(newBuffer, 0, sizeof(newBuffer));					  /* Saeuberung des neuen Speichers (sicherheitshalber) */
 			memcpy(newBuffer,  buffer->mtext+ERRLEN, blen-ERRLEN);		  /* Schreiben der neuen Daten */
-			localHead->aio_buf = newBuffer;								  /* Pufferadresse des CB zeigt nun auf neuen Speicher */
+			localHead->aio_buf = newBuffer;								  /* Pufferadresse des Kontrollblocks zeigt nun auf neuen Speicher */
 	 
 			/* Debug-Information */
 			printf("aio_init.c: payload: -%s-\n", newBuffer);
 		}
 	}
-	else if (localHead->aio_lio_opcode == O_WRITE) /* Schreibauftrag! Notiere Anzahl geschriebener Bytes in aio_nbytes des entsprechenden Kontrollblocks */
-	{
+	else if (localHead->aio_lio_opcode == O_WRITE)
+	{ /* Schreibauftrag! Notiere lediglich die Anzahl der durch aio_write() geschriebener Bytes */
+        
         /* Herauslesen der Anzahl von aio_write() geschriebener Bytes */
         size_t nbytes = 0;
         memcpy(&nbytes,  buffer->mtext+ERRLEN, sizeof(size_t));
@@ -162,8 +196,8 @@ int updateCB(struct msgbuf *buffer, int blen) {
         /* Debug-Information */
         //printf("aio_init.c: aio_write() hat %d bytes geschrieben\n", localHead->aio_nbytes);
 	}
-    else /* localhead->aio_lio_opcode weder O_READ, noch O_WRITE - sollte nicht vorkommen! */
-    {
+    else
+    { /* localhead->aio_lio_opcode ist weder O_READ, noch O_WRITE - sollte nicht vorkommen! */
         return -1;
     }
 	 
@@ -234,7 +268,7 @@ int aio_cleanup()
     }
     else
     {
-        perror("Identifikator fuer Botschaftskanal kann nicht angefordert werden\n");
+        perror("Identifikator fuer Botschaftskanal kann nicht angefordert werden");
         exit(1);
     }
 
@@ -246,8 +280,9 @@ void aio_cleanupWrapper()
 {
     int exitVal;
     if ((exitVal = aio_cleanup()) == 0)
-        exit(0);
-    exit(1);
+        exit(0); /* Aufraeumarbeiten erfolgreich! */
+    
+    exit(1); /* Fehler bei Aufraeumarbeiten */
 }
 
 
@@ -258,7 +293,7 @@ int aio_init()
 {
     int msqid;
     
-    /* Signale an Signalabfangsroutinen binden + urspruengliche Behandlung notieren */
+    /* Signale an Signalabfangsroutinen binden + urspruengliche Behandlung fuer spaetere Ruecksetzung notieren */
     if ((old_USR1_Handler = signal (SIGUSR1, &sighand)) == SIG_ERR)
     {
         perror("Fehler beim Binden der Behandlungsroutine fuer SIGUSR1");

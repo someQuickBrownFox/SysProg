@@ -11,7 +11,8 @@
 #include "aioinit.h"
 #include "aio.h"
 
-/*---------------------------------------------------------
+/*---------------------------------------------------------------------------------------------
+  
   aio_error.c:
   
      - Ermittlung des Abschluß- bzw. Fehlerstatus:
@@ -19,7 +20,8 @@
        --> 0, falls Auftrag erfolgreich abgeschlossen,
        --> errno der zugrundeliegenden Operation, falls Auftrag fehlerhaft abgeschlossen;
        --> -1, falls Fehler bei aio_error () selbst.
----------------------------------------------------------*/
+
+----------------------------------------------------------------------------------------------*/
 
 int aio_error (struct aiocb *aiocbp)
 {
