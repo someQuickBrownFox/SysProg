@@ -12,6 +12,10 @@
 #define LIO_WAIT   0x00
 #define LIO_NOWAIT 0x01
 
+#define AIO_CANCELED            0x1
+#define AIO_NOTCANCELED         0x2
+#define AIO_ALLDONE             0x3
+
 
 /* STRUCTS */
 struct aiocb {

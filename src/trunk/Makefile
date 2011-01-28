@@ -9,21 +9,24 @@
 #		if they have been added below
 #		(is actually a "clean all")
 
-CFLAGS=-g -Wall -Wextra -Werror
+CFLAGS=-g -Wall -Wextra -Werror -DDEBUG -fno-stack-protector
 LDFLAGS=
 
 # all object FOR THE LIB have to be added here
 # (test programs etc belong somewhere else, I suggest
 # a sub dir)
 LIBOBJS=	aio_read.o	\
+		    aio_init.o \
 		    aio_write.o	\
 		    lio_listio.o	\
 		    aio_return.o	\
-		    aio_init.o \
 		    aio_error.o	\
-		    aio_suspend.o
-
-SRVOBJS=	aiosrv.o
+		    aio_suspend.o      \
+			aio_util.o \
+		    aio_cancel.o 
+	
+SRVOBJS=	aiosrv.o \
+			aio_util.o
 
 LIBAIO=libaio.a
 AIOSRV=aiosrv

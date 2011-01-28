@@ -1,5 +1,8 @@
-After compiling via executing the `make` utility make sure to add the directory containing the aiosrv executable to your PATH environment variable.
-You can do this by changing the current working directory to the directory containing the source files, and executing the following command:
+After compiling via executing the `make` utility make sure to add the directory
+containing the aiosrv executable to your PATH environment variable.
+You can do this by changing the current working directory to the directory
+containing the source files, and executing the following command:
     $ export PATH=$PWD:$PATH
-After that, you can `cd` to the testprog-sample sub-directory and execute the test programs.
+After that, you can `cd` to the testprog-sample sub-directory and execute the
+test programs.
 

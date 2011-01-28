@@ -7,14 +7,10 @@
 #include <errno.h>
 #include "aio.h"
 
-// Muss noch in aio.h
-#define AIO_CANCELED            0x1
-#define AIO_NOTCANCELED         0x2
-#define AIO_ALLDONE             0x3
 
+int aio_cancel_once(struct aiocb *aiocb);
 
-
-struct aiocb *HeadPtr = NULL;
+extern struct aiocb *HeadPtr;
 
 int aio_cancel (int fildes, struct aiocb *aiocb) 
 {
@@ -45,14 +41,14 @@ int aio_cancel (int fildes, struct aiocb *aiocb)
 	{
 	 // Treat All
 	 int once_done = 0;
-	 struct aiocb *laufPtr = HeadPtr;		
-	 while(laufPtr != NULL)
+	 struct aiocb *iterationPtr = HeadPtr;		
+	 while(iterationPtr != NULL)
 	 {
-	    if(fildes == laufPtr->aio_fildes)
-			if( aio_cancel_once(laufPtr) == AIO_ALLDONE)
+	    if(fildes == iterationPtr->aio_fildes)
+			if( aio_cancel_once(iterationPtr) == AIO_ALLDONE)
 				once_done = 1;
 
-		laufPtr = laufPtr->aio_next;
+		iterationPtr = iterationPtr->aio_next;
 	 }
 	 if(once_done == 1)
 	  	return AIO_NOTCANCELED;
@@ -87,12 +83,13 @@ int aio_cancel_once(struct aiocb *aiocb)
     aiocb->aio_errno = ECANCELED;
     return AIO_CANCELED;
   }
-
+  return -1;
 }
 
 int main (void)
 {
    aio_cancel(0, NULL); //dummy
+   printf("hallo");
    return 0;
 }
 

@@ -10,17 +10,15 @@
 
 #include "aioinit.h"
 #include "aio.h"
-/*---------------------------------------------------------------------------------------------
 
+/*---------------------------------------------------------
   aio_return.c:
   
      - Ermittlung des Rueckgabewertes:
        --> -1 im Fehlerfall, sonst:
        --> Anzahl gelesener bzw. geschriebener Bytes
-       
-     - anschlieszendes Aushaengen des entsprechenden Kontrollblocks aus der globalen verketteten Liste
-
-----------------------------------------------------------------------------------------------*/
+     - anschliessendes Aushaengen des entsprechenden Kontrollblocks aus der globalen Liste
+---------------------------------------------------------*/
 
 
 size_t aio_return (struct aiocb *aiocbp)
