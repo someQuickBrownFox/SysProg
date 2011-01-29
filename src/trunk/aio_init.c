@@ -37,6 +37,8 @@
     - DONE -- Signatur von updateCB() --> ssize_t nicht mehr benoetigt! --> stattdessen: lokale Variable!
     - Fehlerueberpruefung bei memcpy noetig???
     - versuche realloc() statt malloc() + free() ?
+    - SCHLUESSEL mittels ftok() ( ? file to key) "sessionsepzifisch generieren"
+    - Zeilenbreite hinsichtlich A4-Ausdruck anpassen!
        
 ----------------------------------------------------------------------------------------------*/
 
@@ -80,7 +82,6 @@ void sighand() {
         aio_perror("%s (%d): Fehler beim Lesen des Queue-Status!",__FILE__,__LINE__);
 
     else if (msq_stat == 0)
-        /* sollte eigentlich nicht auftreten */
         aio_perror("%s (%d): Signal erhalten, jedoch MessageQueue leer!",__FILE__,__LINE__);
 
     else if (msq_stat > 0)
@@ -186,19 +187,16 @@ int updateCB(struct msgbuf *buffer) {
     if (localHead->aio_lio_opcode == O_READ)
     { /* Leseauftrag! Schreibe empfangene Daten in entsprechenden Kontrollblock */
 
-        
+
         /* Zielbuffer gueltig? */
-        //if (localHead->aio_buf)
         if (localHead->aio_buf != NULL)
         { /* aio_buf-Zeiger des Kontrollblocks zeigt bereits auf einen befuellten Speicher - Anhaengen von Nutzdaten! */
-
+         
             aio_pdebug("%s (%d): Leseauftrag wird fortgesetzt\n",  __FILE__, __LINE__);
             
             size_t oldSize = localHead->aio_nbytes;             /* ehemalige Nachrichtenlaenge notieren */
-            aio_pdebug("%s (%d): (weiteres schreiben) aio_nbytes PRE - %d\n",  __FILE__, __LINE__, localHead->aio_nbytes);
             localHead->aio_nbytes = localHead->aio_nbytes+blen; /* Aktualisiere Laengenangabe im Kontrollblock */
-            aio_pdebug("%s (%d): (weiteres schreiben) aio_nbytes POST - %d\n",  __FILE__, __LINE__, localHead->aio_nbytes);
-     
+         
             /* Schreiben der Daten */
             if ((newBuffer = malloc(localHead->aio_nbytes)) == NULL)
             { /* Neuer Speicher konnte nicht allokiert werden */
@@ -210,7 +208,7 @@ int updateCB(struct msgbuf *buffer) {
             { /* Neuer Speicher wurde erfolgreich allokiert */
                     
                 memset(newBuffer, 0, sizeof(newBuffer));                                  /* Saeuberung des neuen Speichers */
-                 
+         
                 memcpy(newBuffer, localHead->aio_buf, oldSize);                           /* Sichere ggf. bereits vorhandene Pufferinhalte */
                  
                 memcpy(newBuffer+oldSize, buffer->mtext+sizeof(errno)+sizeof(blen),blen); /* Anhaengen der neuen Daten */
@@ -220,14 +218,13 @@ int updateCB(struct msgbuf *buffer) {
                 localHead->aio_buf = newBuffer;                                           /* Pufferadresse des CB zeigt nun auf neuen Speicher */
             }
         }
+        
         else
         { /* "Erstes" Schreiben, Kontrollblock hat bisher noch keine Nutzdaten beinhaltet */
-
+         
             aio_pdebug("%s (%d): Neuer Leseauftrag\n",  __FILE__, __LINE__);
             
-            aio_pdebug("%s (%d): (erstes schreiben) aio_nbytes PRE - %d\n",  __FILE__, __LINE__, localHead->aio_nbytes);
             localHead->aio_nbytes = blen;  /* Notiere Laengenangabe der aktuellen Nachricht im Kontrollblock */
-            aio_pdebug("%s (%d): (erstes schreiben) aio_nbytes POST - %d\n",  __FILE__, __LINE__, localHead->aio_nbytes);
             
             if ((newBuffer = malloc(localHead->aio_nbytes)) == NULL)
             { /* Neuer Speicher konnte nicht allokiert werden */
@@ -241,26 +238,16 @@ int updateCB(struct msgbuf *buffer) {
                 memset(newBuffer, 0, sizeof(newBuffer));                           /* Saeuberung des neuen Speichers */
                 memcpy(newBuffer,  buffer->mtext+sizeof(errno)+sizeof(blen),blen); /* Schreiben der neuen Daten */
                 localHead->aio_buf = newBuffer;                                    /* Pufferadresse des CB zeigt nun auf neuen Speicher */
-                 
-                /* Debug-Information */
-                //aio_pdebug("%s (%d): Inhalt Mtext %s\n",  __FILE__, __LINE__, buffer->mtext+sizeof(errno)+sizeof(blen));
-                //aio_pdebug("%s (%d): Kopierte Daten %s\n",  __FILE__, __LINE__, (char*)localHead->aio_buf);
             }
         }
     }
     else if (localHead->aio_lio_opcode == O_WRITE)
     { /* Schreibauftrag! Notiere lediglich die Anzahl der durch aio_write() geschriebener Bytes */
         aio_pdebug("%s (%d): Schreibauftrag\n",  __FILE__, __LINE__);
+        aio_pdebug("%s (%d): geschriebene bytes: %d\n",  __FILE__, __LINE__, blen);
         
-        /* Herauslesen der Anzahl von aio_write() geschriebener Bytes */
-//        size_t nbytes = 0;
-//        memcpy(&nbytes,  buffer->mtext+ERRLEN, sizeof(size_t));
-
-        /* Notiere in localHead->aio_nbytes, wieviel Bytes geschrieben wurden */
+        /* Notiere in aio_nbytes des entsprechenden Kontrollblocks, wieviel Bytes geschrieben wurden */
         localHead->aio_nbytes = blen;
-     
-        /* Debug-Information */
-        //printf("aio_init.c: aio_write() hat %d bytes geschrieben\n", localHead->aio_nbytes);
     }
     else
     { /* localhead->aio_lio_opcode ist weder O_READ, noch O_WRITE - sollte nicht vorkommen! */
@@ -398,5 +385,7 @@ int aio_init()
 
         return -1;
     }
+    aio_pdebug("%s (%d): Botschaftskanals mit Identifikator %d erfolgreich eingerichtet\n", __FILE__, __LINE__, msqid);
+
     return 0;
 }
