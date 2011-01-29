@@ -36,6 +36,7 @@
     - DONE -- exit(1) im unteren Drittel von aio_cleanup wirklich sinnvoll? (--> Rueckgabewert!)
     - DONE -- Signatur von updateCB() --> ssize_t nicht mehr benoetigt! --> stattdessen: lokale Variable!
     - Fehlerueberpruefung bei memcpy noetig???
+    - versuche realloc() statt malloc() + free() ?
        
 ----------------------------------------------------------------------------------------------*/
 
@@ -189,12 +190,14 @@ int updateCB(struct msgbuf *buffer) {
         /* Zielbuffer gueltig? */
         //if (localHead->aio_buf)
         if (localHead->aio_buf != NULL)
-        {
+        { /* aio_buf-Zeiger des Kontrollblocks zeigt bereits auf einen befuellten Speicher - Anhaengen von Nutzdaten! */
 
             aio_pdebug("%s (%d): Leseauftrag wird fortgesetzt\n",  __FILE__, __LINE__);
             
             size_t oldSize = localHead->aio_nbytes;             /* ehemalige Nachrichtenlaenge notieren */
+            aio_pdebug("%s (%d): (weiteres schreiben) aio_nbytes PRE - %d\n",  __FILE__, __LINE__, localHead->aio_nbytes);
             localHead->aio_nbytes = localHead->aio_nbytes+blen; /* Aktualisiere Laengenangabe im Kontrollblock */
+            aio_pdebug("%s (%d): (weiteres schreiben) aio_nbytes POST - %d\n",  __FILE__, __LINE__, localHead->aio_nbytes);
      
             /* Schreiben der Daten */
             if ((newBuffer = malloc(localHead->aio_nbytes)) == NULL)
@@ -220,10 +223,11 @@ int updateCB(struct msgbuf *buffer) {
         else
         { /* "Erstes" Schreiben, Kontrollblock hat bisher noch keine Nutzdaten beinhaltet */
 
-
             aio_pdebug("%s (%d): Neuer Leseauftrag\n",  __FILE__, __LINE__);
             
-            localHead->aio_nbytes = blen;  /* Notiere Laengenangabe im Kontrollblock */
+            aio_pdebug("%s (%d): (erstes schreiben) aio_nbytes PRE - %d\n",  __FILE__, __LINE__, localHead->aio_nbytes);
+            localHead->aio_nbytes = blen;  /* Notiere Laengenangabe der aktuellen Nachricht im Kontrollblock */
+            aio_pdebug("%s (%d): (erstes schreiben) aio_nbytes POST - %d\n",  __FILE__, __LINE__, localHead->aio_nbytes);
             
             if ((newBuffer = malloc(localHead->aio_nbytes)) == NULL)
             { /* Neuer Speicher konnte nicht allokiert werden */
