@@ -98,7 +98,7 @@ void sighand() {
         do
         {
             /* Inhalt des temporaeren Puffers sicherheitshalber loeschen */
-            if ((memset(buffer.mtext, 0, PLEN) == NULL)
+            if ((memset(buffer.mtext, 0, PLEN) == NULL))
             { /* Schwerwiegendes Problem mit der Laufzeitumgebung */
             	aio_perror("%s (%d): Fehler beim Initialisieren des Puffers",
             			__FILE__,__LINE__);
