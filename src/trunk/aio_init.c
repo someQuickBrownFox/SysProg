@@ -12,21 +12,21 @@
 #include "aio.h"
 #include "aio_util.h"
 
-/*--------------------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------------------------
   aio_init.c:
   
-     - Definition der Signalbehandlung (fuer SIGUSR1)
-     ================================================
+     Definition der Signalbehandlung (fuer SIGUSR1):
+     ===============================================
        - Auslesen und ankommender Daten aus dem Botschaftskanal
        - adaequates Updaten des entsprechenden Kontrollblocks
 
-     - Initialisierungsarbeiten
-     ==========================
+     Initialisierungsarbeiten:
+     =========================
        - Einrichten der Signalbehandlung (SIGUSR1, SIGINT, SIGTERM)
        - Einrichten des Botschaftskanals
 
-     - Aufraeumarbeiten (Aufruf: manuell und zusaetzlich auch via Signalbehandlung)
-     ==============================================================================
+     Aufraeumarbeiten (Aufruf: manuell und zusaetzlich auch via Signalbehandlung):
+     =============================================================================
        - Zuruecksetzen der jeweiligen Signalbehandlungen auf ihr urspruengliches Verhalten
        - Loeschen des Botschaftskanals
 
@@ -41,12 +41,16 @@
     - Fehlerueberpruefung bei memcpy noetig???
     - versuche realloc() statt malloc() + free() ?
     - SCHLUESSEL mittels ftok() ( ? file to key) "sessionsepzifisch generieren"
-    - DONE - Zeilenbreite hinsichtlich A4-Ausdruck anpassen!
+    - DONE -- Zeilenbreite hinsichtlich A4-Ausdruck anpassen!
     - sighandler: exit vs. break?
+    - DONE -- aio_error.c/aio_return.c mit Debug- und Error-Funktionen versehen!
+    - Dateibeschreibung fuer aio_init.c, aio_error.c und aio_return.c pruefen und ggf. aendern!
+    - aio_return.c: if (predecessorCB)... ueberfluessig? (return-statements!)
        
---------------------------------------------------------------------------------------------------*/
+----------------------------------------------------------------------------------------*/
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////////////////
 
 /* Prototypen */
 int queue_stat(int);
@@ -55,7 +59,7 @@ int updateCB(struct msgbuf*);
 /* Globalen HeadPtr definieren und initialisieren */
 struct aiocb *HeadPtr = NULL;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 
 /* Signalbehandlungs-Funktion (wird an SIGUSR1 gebunden) */
 void sighand() {
@@ -94,7 +98,7 @@ void sighand() {
         do
         {
             /* Inhalt des temporaeren Puffers sicherheitshalber loeschen */
-            if((memset(buffer.mtext, 0, PLEN) == NULL)
+            if ((memset(buffer.mtext, 0, PLEN) == NULL)
             { /* Schwerwiegendes Problem mit der Laufzeitumgebung */
             	aio_perror("%s (%d): Fehler beim Initialisieren des Puffers",
             			__FILE__,__LINE__);
@@ -134,14 +138,15 @@ void sighand() {
                 aio_pdebug("%s (%d): Keine weiteren Nachrichten im Botschaftskanal\n",
                         __FILE__, __LINE__);
 
-        } while (queue_stat(msqid)); /*solange bis keine Nachrichten mehr in der Queue liegen*/
+        } while (queue_stat(msqid)); /* solange bis keine Nachrichten mehr in der Queue liegen*/
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
 
 /* Funktion fuer Update einer aiocb-Struktur aus einer Nachricht der Queue*/
-int updateCB(struct msgbuf *buffer) {
+int updateCB(struct msgbuf *buffer)
+{
     aio_pdebug("%s (%d): Aufruf von updateCB()\n", __FILE__, __LINE__);
 
     ssize_t blen; /* Anzahl der von aiowrite()/aio_read() geschriebener/gelesener Bytes */
@@ -162,7 +167,7 @@ int updateCB(struct msgbuf *buffer) {
      
     /* Suche passenden Kontrollblock */
     aio_pdebug("%s (%d): Suche nach Kontrollblock mit der id %d\n",
-            __FILE__, __LINE__,buffer->mtype);
+            __FILE__, __LINE__, buffer->mtype);
 
     while (localHead->aio_pid != buffer->mtype)
     {
@@ -175,7 +180,7 @@ int updateCB(struct msgbuf *buffer) {
         }
     }
 
-    aio_pdebug("%s (%d): Kontrollblock gefunden\n", __FILE__, __LINE__);
+    aio_pdebug("%s (%d): Kontrollblock %d gefunden\n", __FILE__, __LINE__, buffer->mtype);
      
     /* Im Botschaftskanal wurden (weitere) Daten fuer einen Auftrag uebermittelt -
        Das Kontrollblock-Attribut aio_errno sollte daher den Wert EINPROGRESS enthalten! */
@@ -235,7 +240,7 @@ int updateCB(struct msgbuf *buffer) {
                 aio_perror("%s (%d): "
                         "Fehler bei Allokierung des Nutzdatenpuffer fuer Kontrollblock",
                         __FILE__,__LINE__);
-
+             
                 return -1;
             }
             else
@@ -349,7 +354,7 @@ int updateCB(struct msgbuf *buffer) {
     return blen;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
 
 /* Liefere Information ueber aktuellen Nachrichten-Status des Botschaftskanals */
 int queue_stat(int msqid)
@@ -371,13 +376,13 @@ int queue_stat(int msqid)
             return 0;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
 
 /* Aufraeumarbeiten (nicht Bestandteil der vorgegebenen API)
    Manueller Aufruf am Ende von main() */
 int aio_cleanup()
 {
-    aio_pdebug("%s (%d): Cleanup\n",  __FILE__, __LINE__);
+    aio_pdebug("%s (%d): Aufruf von aio_cleanup()\n",  __FILE__, __LINE__);
     
     int ret = 0; /* Rueckgabewert */
     
@@ -434,14 +439,17 @@ int aio_cleanup()
     return ret;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
 
 /* Aufraeumarbeiten (nicht Bestandteil der vorgegebenen API)
    --> Behandlungsroutine fuer SIGINT und SIGTERM!
    ("Wrapper" fuer aio_cleanup, da die an signal() uebergebene Signalhandlungsroutine
     idealerweise den Rueckgabetyp 'void' haben sollte) */
-void aio_cleanupWrapper()
+void aio_cleanupWrapper(int sig)
 {
+    aio_pdebug("%s (%d): Signal %d erhalten, Eintritt in aio_cleanupWrapper()\n",
+            __FILE__, __LINE__, sig);
+
     int exitVal;
     if ((exitVal = aio_cleanup()) == 0)
         exit(0); /* Aufraeumarbeiten erfolgreich! */
@@ -450,13 +458,15 @@ void aio_cleanupWrapper()
 }
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
 
 /* Initialisierung (manueller Aufruf zu Beginn von main())
    Rueckgabewert - Erfolg: 0, Fehler: -1
 */
 int aio_init()
 {
+    aio_pdebug("%s (%d): Aufruf von aio_init()\n",  __FILE__, __LINE__);
+
     int msqid; /* Identifikator fuer  Botschaftskanal */
     
     aio_pdebug("%s (%d): Binden der Signalbehandlungsroutinen\n", __FILE__, __LINE__);
@@ -512,3 +522,5 @@ int aio_init()
 
     return 0;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////
