@@ -138,7 +138,8 @@ void sighand() {
                 aio_pdebug("%s (%d): Keine weiteren Nachrichten im Botschaftskanal\n",
                         __FILE__, __LINE__);
 
-        } while (queue_stat(msqid)); /* solange bis keine Nachrichten mehr in der Queue liegen*/
+        } while (queue_stat(msqid));
+        /* solange bis keine Nachrichten mehr in der Queue liegen*/
     }
 }
 
@@ -234,7 +235,8 @@ int updateCB(struct msgbuf *buffer)
             localHead->aio_nbytes = localHead->aio_nbytes+blen; 
          
             /* Schreiben der Daten */
-            if ((newBuffer = malloc(localHead->aio_nbytes)) == NULL)
+            if ((localHead->aio_buf = realloc(localHead->aio_buf, localHead->aio_nbytes))
+                    == NULL)
             { /* Neuer Speicher konnte nicht allokiert werden */
                 
                 aio_perror("%s (%d): "
@@ -247,38 +249,24 @@ int updateCB(struct msgbuf *buffer)
             { /* Neuer Speicher wurde erfolgreich allokiert */
                     
                 /* Saeuberung des neuen Speichers */
-                if(memset(newBuffer, 0, sizeof(newBuffer)) == NULL)
+                if(memset(localHead->aio_buf + oldSize, 0, sizeof(newBuffer)) == NULL)
                 { /*Schwerwiegendes Problem in der Laufzeitumgebung */
-                	aio_perror("%s (%d): Fehler beim Initialisieren des Nutzdatenspeichers",
-                		__FILE__,__LINE__);
+                	aio_perror("%s (%d): "
+                            "Fehler beim Initialisieren der neuen Speicherbloecke",
+                		    __FILE__,__LINE__);
                 		
                 	return -1;
                 }
          
-                /* Sichere ggf. bereits vorhandene Pufferinhalte in den neuen Speicher*/
-                if(memcpy(newBuffer, localHead->aio_buf, oldSize) == NULL)
-                { /*Schwerwiegendes Problem in der Laufzeitumgebung */
-                	aio_perror("%s (%d): Fehler beim Sichern des alten Nutzdatenspeichers",
-                		__FILE__,__LINE__);
-                		
-                	return -1;
-                }
-                 
                 /* Anhaengen der empfangenen Daten */
-                if(memcpy(newBuffer+oldSize, buffer->mtext+sizeof(errno)+sizeof(blen),blen) 
-                	== NULL)
+                if (memcpy(localHead->aio_buf + oldSize,
+                            buffer->mtext+sizeof(errno)+sizeof(blen),blen) == NULL)
                 { /*Schwerwiegendes Problem in der Laufzeitumgebung */
                 	aio_perror("%s (%d): Fehler beim Anhaengen der Paketdaten",
                 		__FILE__,__LINE__);
                 		
                 	return -1;
                 }
-                 
-                /* Gebe alten Speicher frei */
-                free(localHead->aio_buf); /* gibt keinen Wert fuer Test zurueck */
-                 
-                /* Pufferadresse des CB zeigt nun auf neuen Speicher */
-                localHead->aio_buf = newBuffer;
             }
         }
         
@@ -314,10 +302,12 @@ int updateCB(struct msgbuf *buffer)
                 }
 
                 /* Schreiben der neuen Daten */
-                if(memcpy(newBuffer,  buffer->mtext+sizeof(errno)+sizeof(blen),blen) == NULL)
+                if(memcpy(newBuffer,  buffer->mtext+sizeof(errno)+sizeof(blen),blen)
+                        == NULL)
                 { /*Schwerwiegendes Problem in der Laufzeitumgebung */
-                	aio_perror("%s (%d): Fehler beim Schreiben der Daten in den Kontrollblock",
-                		__FILE__,__LINE__);
+                	aio_perror("%s (%d): "
+                            "Fehler beim Schreiben der Daten in den Kontrollblock",
+                		    __FILE__,__LINE__);
                 		 
                 	return -1;
                 }
