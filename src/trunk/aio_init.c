@@ -37,15 +37,15 @@
               Verwendung innerhalb von sighand() --> sinnvolle Reaktion!
     - DONE -- exit(1) im unteren Drittel von aio_cleanup wirklich sinnvoll? (--> Rueckgabewert!)
     - DONE -- Signatur von updateCB() --> ssize_t nicht mehr benoetigt!
-    --> stattdessen: lokale Variable!
-    - Fehlerueberpruefung bei memcpy noetig???
-    - versuche realloc() statt malloc() + free() ?
+              --> stattdessen: lokale Variable!
+    - DONE -- Fehlerueberpruefung bei memcpy noetig???
+    - DONE -- versuche realloc() statt malloc() + free() ?
     - SCHLUESSEL mittels ftok() ( ? file to key) "sessionsepzifisch generieren"
     - DONE -- Zeilenbreite hinsichtlich A4-Ausdruck anpassen!
-    - sighandler: exit vs. break?
+    - DONE sighandler: exit vs. break?
     - DONE -- aio_error.c/aio_return.c mit Debug- und Error-Funktionen versehen!
-    - Dateibeschreibung fuer aio_init.c, aio_error.c und aio_return.c pruefen und ggf. aendern!
-    - aio_return.c: if (predecessorCB)... ueberfluessig? (return-statements!)
+    - DONE -- Dateibeschreibung fuer aio_init.c, aio_error.c und aio_return.c pruefen und ggf. aendern!
+    - DONE -- aio_return.c: if (predecessorCB)... ueberfluessig? (return-statements!)
        
 ----------------------------------------------------------------------------------------*/
 
@@ -111,7 +111,7 @@ void sighand() {
                 aio_perror("%s (%d): Fehler beim Lesen aus Botschaftskanal",
                         __FILE__,__LINE__);
 
-                break;
+                exit(1);
             }
 
             /* Korrespondierenden Kontrollblock updaten */

@@ -1,94 +1,224 @@
 #include "aio.h"
 #include <stdio.h>
-/* open */
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-/* close */
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
 
 
+/*----------------------------------------------------------------------------------------
+  testmain.c:
+
+    DISCLAIMER:
+
+    Test der Funktionen aio_init(), aio_error(), aio_return(), aio_cleanup().
+
+    Bedingt durch den momentan Projektgesamtstatus werden diese Funktionen
+    _AUSSCHLIESSLICH_ hinsichtlich des Zusammenspiels mit aio_read und aio_write() getestet.
+    
+
+
+  
+     aio_init():
+     ===========
+       - Defintion der Signalbehandlung
+       - Einrichten des Botschaftskanals
+       - Initialisierung des globalen Listenankers (HeadPtr)
+
+     Exemplarischer Schreibauftrag:
+     ==============================
+       - Aufruf von aio_write()
+       - Daten: Zeichenkette
+       - Schreibziel: Ausgabedatei
+
+     Exemplarischer Leseauftrag:
+     ==========================
+       - Aufruf von aio_read()
+       - Daten: Textdaten aus Eingabedatei
+       - Leseziel: Nutzdatenpuffer des entsprechenden Kontrollblocks
+       
+     Aufraeumarbeiten:
+     =================
+       - Ruecksetzen der Signalbehandlung
+       - Loeschen des Botschaftskanals
+
+----------------------------------------------------------------------------------------*/
+
 int main(int argc, char *argv[]) {
 
-    printf ("foo gestartet: %d\n", getpid());
+    /* ================================
+	 * INITIALISIERUNG
+     * ================================*/
 
-    /* Signalhandler installieren */
+
+    printf ("testmain gestartet (pid: %d)\n", getpid());
+
+    /* Namen der Input- und Output Dateien */
+    char input_file []  = "lala.txt";
+    char output_file [] = "lala_write.txt";
+
+    /* Initialisierung (Signalbehandlung, Botschaftskanal) */
     aio_init();
 
-    /* Lege zwei aiocb structs an */
+    /* Lege zwei aiocb-Strukturen an */
     struct aiocb cb1, cb2;
 
-    /* Initialisierung? */
+    /* Initialisierung der bereits jetzt schon benoetigten Strukturkomponenten */
     cb1.aio_buf = NULL;
     cb1.aio_offset = 0;
 
     cb2.aio_buf = NULL;
     cb2.aio_offset = 0;
 
-    int fd1,fd2;
     
-	/* WRITE */
-	if ((fd1 = open("lala_write.txt", O_WRONLY|O_APPEND)) == -1) {
-		printf("error opening lala.txt\n");
+
+
+    /* ================================
+	 * SCHREIBAUFTRAG
+     * ================================*/
+
+    /* Zu schreibender Text */
+	char text[] = "Zum inzwischen 25. Mal ruft die Gönger SerNet GmbH Anwender und Entwickler zur Samba eXPerience nach Göngen.\n";
+
+    /* Oeffne zu schreibene Datei (Dateideskriptor fd1) */
+    int fd1;
+	if ((fd1 = open(output_file , O_WRONLY|O_APPEND)) == -1) {
+		perror ("error opening output_file\n");
         return 1;
     }
 	 
+    /* Spezifiziere den Dateideskriptor im Kontrollblock */
 	cb1.aio_fildes = fd1;
-	char text[] = "Zum inzwischen 24. Mal ruft die Gönger SerNet GmbH Anwender und Entwickler zur Samba eXPerience nach Göngen.\n";
 
-	cb1.aio_buf = malloc(strlen(text) + 1);
-	memcpy(cb1.aio_buf, text, strlen(text) +1);
+    /* Allokiere einen Nutzdatenpuffer fuer den  Kontrollblock (Groesse entsprechend den zu schreibenden Daten) */
+	if ((cb1.aio_buf = malloc(strlen(text) + 1)) == NULL)
+    {
+		perror ("Fehler bei Speicheranforderung fuer Nutzdatenpuffer des Kontrollblocks cb1\n");
+        return 1;
+    }
+
+    /* Kopiere die zu schreibenden Daten in den Nutzdatenpuffer des Kontrollblocks */
+	if ((memcpy(cb1.aio_buf, text, strlen(text) +1)) == NULL)
+    {
+		perror ("Fehler beim Befuellen des Nutzdatenpuffers des Kontrollblocks cb1\n");
+        return 1;
+    }
+
+    /* Spezifiziere die gewuenschte Menge tatsaechlich zu schreibender Bytes */
 	cb1.aio_nbytes = strlen(text);
-	aio_write(&cb1);
 
-    while (aio_error(&cb1) == EINPROGRESS); 
-	printf("errno value CB1: %d\n", aio_error(&cb1));
+    /* Konnte der aio_write()-Auftrag erfolgreich aufgetragen werden? */
+	if (aio_write(&cb1) != -1) 
+    {
+        /* Warte, solange sich der Schreibauftrag noch in Bearbeitung befindet */
+        while (aio_error(&cb1) == EINPROGRESS); 
 
-    close(fd1);
+        /* Ausgabe der Fehlernummer und des Rueckgabewertes */
+	    printf("Rueckgabewert von aio_error()  [Schreibauftrag - cb1]: %d\n", aio_error(&cb1));
+        printf("Rueckgabewert von aio_return() [Schreibauftrag - cb1]: %d\n", (int)aio_return(&cb1));
+    }
+    else
+    {
+        perror ("Der aio_write()-Auftrag konnte nicht erfolgreich aufgetragen werden");
+    }
+
+    /* Gebe Nutzdatenpuffer von Kontrollblock cb1 frei */
+    free(cb1.aio_buf);
+
+    /* Schliesse Datei */
+    if (close(fd1) == -1)
+    {
+        perror ("Fehler beim Schliessen von output_file");
+    }
 
 
+
+
+
+    /* ================================
+	 * LESEAUFTRAG
+     * ================================*/
     
-    /* READ */
-	struct stat st;
-    stat("./lala.txt", &st);
-	if ((fd2 = open("./lala.txt", O_RDONLY)) == -1) {
-		printf("error opening lala.txt\n");
-        return -1;
+    /* Oeffne zu lesende Datei (Dateideskriptor fd2) */
+    int fd2;
+	if ((fd2 = open(input_file, O_RDONLY)) == -1) {
+		perror ("error opening input_file\n");
+        return 1;
     }
     
+    /* Spezifiziere den Dateideskriptor im Kontrollblock */
 	cb2.aio_fildes = fd2;
+
+    /* Ermittle Dateigroesse und spezifiziere anschliessend die gewuenschte Menge tatsaechlich zu lesender Bytes */
+	struct stat st;
+    stat(input_file, &st);
 	cb2.aio_nbytes = st.st_size;
     
-	printf ("aio_read returns %d\n",aio_read(&cb2));
-    
-	if (errno != 0) {
-		  perror("aio_read error");
-	}
+    /* Konnte der aio_read()-Auftrag erfolgreich aufgetragen werden? */
+	if (aio_read(&cb2) != -1)
+    {
+        /* Warte, solange sich der Leseauftrag noch in Bearbeitung befindet */
+	    while (aio_error(&cb2) == EINPROGRESS); 
 
-	while (aio_error(&cb2) == EINPROGRESS); 
-	printf("errno value CB2: %d\n", aio_error(&cb2));
+        /* Ausgabe der Fehlernummer und des Rueckgabewertes */
+	    printf("Rueckgabewert von aio_error()  [Leseauftrag - cb2]: %d\n", aio_error(&cb2));
 
-	printf ("sollte fertig sein...\n");
-	int copy = (int)aio_return(&cb2);
-	printf("return value: %d\n", copy);
+        ssize_t retLength = aio_return(&cb2);
+	    printf("Rueckgabewert von aio_return() [Leseauftrag - cb2]: %d\n", (int)retLength);
 
-	
-	char buffer[copy+1];
-	memset(buffer,'\0',copy+1);
-	memcpy(buffer, cb2.aio_buf,copy);
-	int blub = strlen(buffer);
-	printf("CB2 Buffer size: %d\n", blub);
-	printf("CB2 contents: '%s'\n", buffer);
+        if (retLength >= 0)
+        {
+            /* Zu Testzwecken handelt es sich um menschenlesbare Zeichenketten.
+             * Um diese besser ausgeben zu koennen, sollten diese in ein
+             * temporaeres char-Array kopiert und nullterminiert werden */
 
-    close(fd2);
+	        char buffer[retLength+1];
 
+	        if (memset(buffer, 0, retLength+1) == NULL)
+            {
+                perror ("Fehler bei Speicherinitialisierung fuer Ausgabepuffer\n");
+                return 1;
+            }
 
+	        if (memcpy(buffer, cb2.aio_buf,retLength) == NULL)
+            {
+                perror ("Fehler beim Kopieren der Nutzdaten des Kontrollblocks in den Ausgabepuffer\n");
+                return 1;
+            }
 
-    /* CLEANUP */
-    aio_cleanup();
-    free(cb1.aio_buf);
+	        int laenge = strlen(cb2.aio_buf);
+            buffer[laenge] = '\0';
+	        printf("CB2 - Anzahl Nutzdatenbytes: %d\n", laenge);
+	        printf("CB2 - Nutzdaten: '%s'\n", buffer);
+        }
+    }
+    else
+    {
+        perror ("Der aio_read()-Auftrag konnte nicht erfolgreich aufgetragen werden");
+    }
+
+    /* Gebe Nutzdatenpuffer von Kontrollblock cb2 frei */
     free(cb2.aio_buf);
+
+    /* Schliesse Datei */
+    if (close(fd2) == -1)
+    {
+        perror ("Fehler beim Schliessen von input_file");
+    }
+
+
+
+
+    /* ================================
+	 * AUFRAEUMARBEITEN
+     * ================================*/
+
+    if (aio_cleanup() == -1)
+    {
+        perror ("Fehler bei Aufraemarbeiten");
+    }
+
     return 0;
 }

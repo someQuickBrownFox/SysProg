@@ -24,7 +24,7 @@ LIBOBJS=	aio_read.o	\
 		    aio_suspend.o      \
 			aio_util.o \
 		    aio_cancel.o 
-	
+
 SRVOBJS=	aiosrv.o \
 			aio_util.o
 

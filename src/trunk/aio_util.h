@@ -12,11 +12,8 @@ int aio_perror(const char * f, ...);
  * the -DDEBUG switch. If the DEBUG constant is not defined, debug messages
  * will simply be ignored.
  */
-#ifdef DEBUG
+
 int aio_pdebug(const char * f, ...);
-#else
-#define aio_pdebug(f, ...)
-#endif
 
 #endif // AIO_UTIL_H
 

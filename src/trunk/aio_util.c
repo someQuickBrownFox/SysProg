@@ -34,5 +34,10 @@ int aio_pdebug(const char * f, ...)
     va_end(ap);
     return r;
 }
+#else
+int aio_pdebug(const char * f, ...)
+{
+    return (f == NULL) ? 1 : 0;
+}
 #endif
 

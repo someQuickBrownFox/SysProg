@@ -12,12 +12,13 @@
 #define LIO_WAIT   0x00
 #define LIO_NOWAIT 0x01
 
-#define AIO_CANCELED            0x1
-#define AIO_NOTCANCELED         0x2
-#define AIO_ALLDONE             0x3
+#define AIO_CANCELED     0x1
+#define AIO_NOTCANCELED  0x2
+#define AIO_ALLDONE      0x3
 
 
 /* STRUCTS */
+/* Globale Strukturdeklaration fuer aiocb (Kontrollblock) */
 struct aiocb {
    int          aio_fildes;       /* Dateinummer fd */
    off_t        aio_offset;       /* Zugriffsposition */
@@ -35,7 +36,7 @@ struct aiocb {
 
 
 
-/* FUNKTIONEN */
+/* OEFFENTLICHE FUNKTIONEN */
 int aio_read (struct aiocb *aiocbp);
 
 int aio_write (struct aiocb *aiocbp);
@@ -51,7 +52,7 @@ int aio_init();
     
 int aio_cleanup();
 
-size_t aio_return (struct aiocb *aiocbp);
+ssize_t aio_return (struct aiocb *aiocbp);
 
 int aio_error (struct aiocb *aiocbp);
 
@@ -60,7 +61,7 @@ int aio_suspend (struct aiocb *list[], int nent, struct timespec *timeout);
 
 
 /* SIGNALHANDLING */
-void sigHandler (int sig_nr); /* Akzeptiert ausschlieslich SIGUSR1*/
+void sighand (); /* Akzeptiert ausschlieslich SIGUSR1*/
 
 
 #endif /* end AIO_H */
