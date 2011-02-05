@@ -1,4 +1,4 @@
-#include "aio.h"
+ #include "aio.h"
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -46,6 +46,37 @@
 
 ----------------------------------------------------------------------------------------*/
 
+/* Lege zwei aiocb-Strukturen an */
+struct aiocb cb1, cb2;
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
+enum zustand {INIT = 0, cb1Allocated, cb2Allocated, BOTH} Allokierungen;
+
+/* Speicherfreigabefunktion -
+   speziell auf die beiden Kontrollbloecke cb1 + cb2 dieses Testprogramms zugeschnitten! */
+void freeCBs(enum zustand z)
+{
+    switch (z)
+	{
+	    case INIT:
+            break;
+	    case cb1Allocated:
+	    	free(cb1.aio_buf);
+	    	break;
+            
+	    case cb2Allocated:
+	    	free(cb2.aio_buf);
+	    	break;
+            
+	    case (cb1Allocated | cb2Allocated):
+	    	free(cb1.aio_buf);
+	    	free(cb2.aio_buf);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////
+ 
 int main(int argc, char *argv[]) {
 
     /* ================================
@@ -61,9 +92,6 @@ int main(int argc, char *argv[]) {
 
     /* Initialisierung (Signalbehandlung, Botschaftskanal) */
     aio_init();
-
-    /* Lege zwei aiocb-Strukturen an */
-    struct aiocb cb1, cb2;
 
     /* Initialisierung der bereits jetzt schon benoetigten Strukturkomponenten */
     cb1.aio_buf = NULL;
@@ -98,11 +126,13 @@ int main(int argc, char *argv[]) {
 		perror ("Fehler bei Speicheranforderung fuer Nutzdatenpuffer des Kontrollblocks cb1\n");
         return 1;
     }
+    Allokierungen = cb1Allocated;
 
     /* Kopiere die zu schreibenden Daten in den Nutzdatenpuffer des Kontrollblocks */
 	if ((memcpy(cb1.aio_buf, text, strlen(text) +1)) == NULL)
     {
 		perror ("Fehler beim Befuellen des Nutzdatenpuffers des Kontrollblocks cb1\n");
+        freeCBs(Allokierungen);
         return 1;
     }
 
@@ -122,17 +152,15 @@ int main(int argc, char *argv[]) {
     else
     {
         perror ("Der aio_write()-Auftrag konnte nicht erfolgreich aufgetragen werden");
+        freeCBs(Allokierungen);
     }
-
-    /* Gebe Nutzdatenpuffer von Kontrollblock cb1 frei */
-    free(cb1.aio_buf);
 
     /* Schliesse Datei */
     if (close(fd1) == -1)
     {
         perror ("Fehler beim Schliessen von output_file");
+        freeCBs(Allokierungen);
     }
-
 
 
 
@@ -145,6 +173,7 @@ int main(int argc, char *argv[]) {
     int fd2;
 	if ((fd2 = open(input_file, O_RDONLY)) == -1) {
 		perror ("error opening input_file\n");
+        freeCBs(Allokierungen);
         return 1;
     }
     
@@ -159,6 +188,8 @@ int main(int argc, char *argv[]) {
     /* Konnte der aio_read()-Auftrag erfolgreich aufgetragen werden? */
 	if (aio_read(&cb2) != -1)
     {
+        Allokierungen |= cb2Allocated;
+        
         /* Warte, solange sich der Leseauftrag noch in Bearbeitung befindet */
 	    while (aio_error(&cb2) == EINPROGRESS); 
 
@@ -166,7 +197,7 @@ int main(int argc, char *argv[]) {
 	    printf("Rueckgabewert von aio_error()  [Leseauftrag - cb2]: %d\n", aio_error(&cb2));
 
         ssize_t retLength = aio_return(&cb2);
-	    printf("Rueckgabewert von aio_return() [Leseauftrag - cb2]: %d\n", (int)retLength);
+	    printf("Rueckgabewert von aio_return() [Leseauftrag - cb1]: %d\n", (int)retLength);
 
         if (retLength >= 0)
         {
@@ -179,33 +210,34 @@ int main(int argc, char *argv[]) {
 	        if (memset(buffer, 0, retLength+1) == NULL)
             {
                 perror ("Fehler bei Speicherinitialisierung fuer Ausgabepuffer\n");
+                freeCBs(Allokierungen);
                 return 1;
             }
 
 	        if (memcpy(buffer, cb2.aio_buf,retLength) == NULL)
             {
                 perror ("Fehler beim Kopieren der Nutzdaten des Kontrollblocks in den Ausgabepuffer\n");
+                freeCBs(Allokierungen);
                 return 1;
             }
 
 	        int laenge = strlen(cb2.aio_buf);
-            buffer[laenge] = '\0';
 	        printf("CB2 - Anzahl Nutzdatenbytes: %d\n", laenge);
 	        printf("CB2 - Nutzdaten: '%s'\n", buffer);
         }
+
     }
     else
     {
         perror ("Der aio_read()-Auftrag konnte nicht erfolgreich aufgetragen werden");
+        freeCBs(Allokierungen);
     }
-
-    /* Gebe Nutzdatenpuffer von Kontrollblock cb2 frei */
-    free(cb2.aio_buf);
 
     /* Schliesse Datei */
     if (close(fd2) == -1)
     {
         perror ("Fehler beim Schliessen von input_file");
+        freeCBs(Allokierungen);
     }
 
 
@@ -220,5 +252,7 @@ int main(int argc, char *argv[]) {
         perror ("Fehler bei Aufraemarbeiten");
     }
 
+    freeCBs(Allokierungen);
+    
     return 0;
 }

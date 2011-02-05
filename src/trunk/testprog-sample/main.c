@@ -1,4 +1,5 @@
 #include "../aio.h"
+#include <stdio.h>
 
 int main() {
 	printf("testprog-sample main\n");

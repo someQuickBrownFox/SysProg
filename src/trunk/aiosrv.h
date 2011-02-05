@@ -1,0 +1,4 @@
+#define AIOSRV_SUCCESS 0x01
+#define AIOSRV_WAITING 0x02
+#define AIOSRV_ERROR   0x03
+

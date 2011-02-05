@@ -18,7 +18,6 @@ int aio_cancel (int fildes, struct aiocb *aiocb)
 	fcntl(fildes, F_GETFD);
 	if(errno == EBADF ) //BadFileDescriptor
 	{
-	  printf("aio_cancel: BadFileDescriptor\n"); //debug
 	  return -1;
 	}
   
@@ -41,32 +40,53 @@ int aio_cancel (int fildes, struct aiocb *aiocb)
 	{
 	 // Treat All
 	 int once_done = 0;
-	 struct aiocb *iterationPtr = HeadPtr;		
-	 while(iterationPtr != NULL)
+	 int once_canceled = 0;
+	 struct aiocb *iterationPtr = HeadPtr;	
+	 do
 	 {
 	    if(fildes == iterationPtr->aio_fildes)
-			if( aio_cancel_once(iterationPtr) == AIO_ALLDONE)
+	    {
+			int backValue = aio_cancel_once(iterationPtr);
+			if(backValue == AIO_ALLDONE)
+			{
 				once_done = 1;
-
-		iterationPtr = iterationPtr->aio_next;
+			}
+			else if (backValue == AIO_CANCELED)
+			{
+			      once_canceled = 1;
+			}
+	    }
+	    
+	    iterationPtr = iterationPtr->aio_next;
 	 }
-	 if(once_done == 1)
+	 while (iterationPtr != NULL);
+	 if(once_done == 1 && once_canceled == 1)
+	 {
 	  	return AIO_NOTCANCELED;
 	}
+	else if (once_done == 0 && once_canceled == 1)
+	{
+	    return AIO_CANCELED;
+	}
+	else if (once_canceled == 0 && once_done == 1)
+	{
+	  return AIO_ALLDONE;
+	}
 	return 0;
+}
 }
 
 int aio_cancel_once(struct aiocb *aiocb)
 {
   int status = 0;
-
-  if( kill(aiocb->aio_pid, SIGTERM) == -1 )
+ 
+  if( kill(aiocb->aio_pid, SIGKILL) == -1 )
   {
 	aiocb->aio_errno=errno;
 	return -1;
   }
 
-  if( waitpid(aiocb->aio_pid, &status, WNOHANG) == -1 ) // return immediately if no child hasexited.
+  if( waitpid(aiocb->aio_pid, &status, 0) == -1 ) // return immediately if no child hasexited.
   {
 	aiocb->aio_errno=errno;
 	return -1;
@@ -74,23 +94,15 @@ int aio_cancel_once(struct aiocb *aiocb)
 
   if (WIFEXITED(status)) 
   {
-    printf("aio_cancel: process already finished\n");  //debug
     return AIO_ALLDONE;
   }
   else if (WIFSIGNALED(status)) 
   {
-    printf("aio_cancel: process killed by signal\n");  //debug
+    //Process killed by signal
     aiocb->aio_errno = ECANCELED;
     return AIO_CANCELED;
   }
   return -1;
-}
-
-int main (void)
-{
-   aio_cancel(0, NULL); //dummy
-   printf("hallo");
-   return 0;
 }
 
 

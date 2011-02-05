@@ -15,13 +15,18 @@
 CFLAGS=-g -Wall -Wextra -Werror
 
 OBJS=main.o
+AIOLIB=../libaio.a
 TARGET=testprog-sample
 
-all: ../libaio.a $(OBJS)
-	gcc -o $(TARGET) $(OBJS) ../libaio.a
+all: $(TARGET)
 
 clean:
 	rm -f $(OBJS) $(TARGET)
 
-../libaio.a:
-	make -C.. libaio.a
+$(TARGET): $(OBJS) $(AIOLIB)
+	gcc -o $(TARGET) $(OBJS) $(AIOLIB)
+
+$(AIOLIB):
+	make -C..
+
+

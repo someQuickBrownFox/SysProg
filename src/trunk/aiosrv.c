@@ -9,6 +9,7 @@
 
 #include <fcntl.h>
 #include "aio.h"
+#include "aiosrv.h"
 #include "aioinit.h"
 #include "aio_util.h"
 
@@ -196,7 +197,7 @@ int aiosrv_read(pid_t ppid[], int ppidlen, struct aiocb * aiocbp)
     for (ppididx = 1; ppididx < ppidlen; ppididx ++)
     {
         aio_pdebug("%s (%d): Signaling process %d, we have finished\n",
-                   __FILE__, __LINE__);
+                   __FILE__, __LINE__, ppid[ppididx]);
         if (kill(ppid[ppididx], SIGUSR1) == -1)
         {
             aio_perror("%s (%d): Sending signal failed",
@@ -296,6 +297,33 @@ int aiosrv_write(pid_t ppid[], int ppidlen, struct aiocb * aiocbp)
     return 0;
 }
 
+/**
+ * Sends a signal USR2 to the given process id and writes the code into the
+ * file denoted by fd.
+ */
+int send(int fd, pid_t ppid, int code)
+{
+    aio_pdebug("%s (%d): Sending signal %d to process %d with code %d\n",
+               __FILE__, __LINE__,
+               SIGUSR2, ppid, code);
+    if (write(fd, &code, sizeof(code)) == -1)
+    {
+        return -1;
+    }
+
+    if (kill(ppid, SIGUSR2) == -1)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
+/**
+ * First argument: FD of the pipe to write back to aio_read()/aio_write()
+ * Second argument: PID of the calling process
+ * Additional arguments: PIDs of processes to inform, when operation finished
+ */
 int main(int argc, char* argv[])
 {
     struct msgbuf  msgbuf;
@@ -307,6 +335,7 @@ int main(int argc, char* argv[])
     int            i;
     size_t         brcvd  = 0;
     int            mbrcvd = 0;
+    int            pipeout;
 
     if (signal(SIGTERM, aiosrv_sighandler) == SIG_ERR)
     {
@@ -322,9 +351,16 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    if (argc < 2)
+    if (argc < 3)
     {
         printf("This program is not intended for usage by the real user");
+        free(ppid);
+        exit(1);
+    }
+    
+    if ((pipeout = atoi(argv[1])) < 1)
+    {
+        printf("Invalid argument, expected positive integer value\n");
         free(ppid);
         exit(1);
     }
@@ -333,7 +369,7 @@ int main(int argc, char* argv[])
     {
         aio_pdebug("%s (%d): Insufficient memory available\n",
                    __FILE__, __LINE__);
-        if (kill(ppid[0], SIGUSR2) == -1)
+        if (send(pipeout, ppid[0], AIOSRV_ERROR) == -1)
         {
             aio_pdebug("%s (%d): Father already died, or insufficient "
                        "permissions. Exiting...\n",
@@ -343,11 +379,11 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    for (i = 1; i < argc; i ++)
+    for (i = 2; i < argc; i ++)
     {
-        if ((ppid[i - 1] = atoi(argv[i])) < 1)
+        if ((ppid[i - 2] = atoi(argv[i])) < 1)
         {
-            printf("Invalid argument, expected positive integer value");
+            printf("Invalid argument, expected positive integer value\n");
             free(ppid);
             exit(1);
         }
@@ -360,7 +396,7 @@ int main(int argc, char* argv[])
     aio_pdebug("%s (%d): Telling father, that we are ready for receiving "
                "the control block\n",
                __FILE__, __LINE__);
-    if (kill(ppid[0], SIGUSR1) == -1)
+    if (send(pipeout, ppid[0], AIOSRV_WAITING) == -1)
     {
         aio_perror("%s (%d): Father already died, or insufficient "
                    "permissions. Exiting...",
@@ -369,12 +405,12 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    pbufrd = read(0, &cb, sizeof(struct aiocb));
+    pbufrd = read(STDIN_FILENO, &cb, sizeof(struct aiocb));
     if (pbufrd == (ssize_t) -1)
     {
         aio_perror("%s (%d): Error while reading the cb",
                    __FILE__, __LINE__);
-        if (kill(ppid[0], SIGUSR2) == -1)
+        if (send(pipeout, ppid[0], AIOSRV_ERROR) == -1)
         {
             aio_perror("%s (%d): Father already died, or insufficient "
                        "permissions. Exiting...",
@@ -388,7 +424,7 @@ int main(int argc, char* argv[])
     {
         aio_pdebug("%s (%d): Error while reading the cb: missing bytes.\n",
                    __FILE__, __LINE__);
-        if (kill(ppid[0], SIGUSR2) == -1)
+        if (send(pipeout, ppid[0], AIOSRV_ERROR) == -1)
         {
             aio_perror("%s (%d): Father already died, or insufficient "
                        "permissions. Exiting...",
@@ -410,7 +446,7 @@ int main(int argc, char* argv[])
                 aio_perror("%s (%d): Failed getting the message queue "
                            "identifier",
                            __FILE__, __LINE__);
-                if (kill(ppid[0], SIGUSR2) == -1)
+                if (send(pipeout, ppid[0], AIOSRV_ERROR) == -1)
                 {
                     aio_perror("%s (%d): Father already died, or insufficient"
                                " permissions. Exiting...",
@@ -448,7 +484,7 @@ int main(int argc, char* argv[])
             aio_pdebug("%s (%d): Signal father, we are ready for processing "
                        "the desired operation...\n",
                        __FILE__, __LINE__);
-            if (kill(ppid[0], SIGUSR1) == -1)
+            if (send(pipeout, ppid[0], AIOSRV_WAITING) == -1)
             {
                 // i guess, we can ignore an error here
                 aio_pdebug("%s (%d): Parent already died!\n",
@@ -471,7 +507,7 @@ int main(int argc, char* argv[])
             break;
         case O_READ:
             // tell the father, we got the data!
-            if (kill(ppid[0], SIGUSR1) == -1)
+            if (send(pipeout, ppid[0], AIOSRV_WAITING) == -1)
             {
                 // i guess, we can ignore an error here
                 aio_pdebug("%s (%d): Parent already died!\n",
@@ -493,7 +529,7 @@ int main(int argc, char* argv[])
             break;
         default:
             // send a message maybe?
-            if (kill(ppid[0], SIGUSR2) == -1)
+            if (send(pipeout, ppid[0], AIOSRV_ERROR) == -1)
             {
                 // it's legal to send the parent the SIGUSR2 signal,
                 // as it should still wait for USR1 or USR2 in the

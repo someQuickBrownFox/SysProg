@@ -18,6 +18,7 @@ LDFLAGS=
 LIBOBJS=	aio_read.o	\
 		    aio_init.o \
 		    aio_write.o	\
+			aio_rw_shared.o \
 		    lio_listio.o	\
 		    aio_return.o	\
 		    aio_error.o	\
@@ -41,7 +42,9 @@ $(AIOSRV): $(SRVOBJS)
 clean:
 	rm -f $(LIBOBJS) $(LIBAIO) $(SRVOBJS) $(AIOSRV)
 	make -Ctestprog-sample clean
+	make -Ctestprog-suspend-standalone clean
 
 # add every test programm below as a new line
 all: $(LIBAIO)
 	make -Ctestprog-sample
+	make -Ctestprog-suspend-standalone

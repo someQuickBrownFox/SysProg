@@ -1,7 +1,7 @@
 K 25
 svn:wc:ra_dav:version-url
-V 51
-/ws10-sysprog/svn/!svn/ver/56/trunk/testprog-sample
+V 52
+/ws10-sysprog/svn/!svn/ver/131/trunk/testprog-sample
 END
 aio_write_test.c
 K 25
@@ -24,12 +24,18 @@ END
 main.c
 K 25
 svn:wc:ra_dav:version-url
-V 57
-/ws10-sysprog/svn/!svn/ver/3/trunk/testprog-sample/main.c
+V 59
+/ws10-sysprog/svn/!svn/ver/117/trunk/testprog-sample/main.c
+END
+lio_listio_test.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/ws10-sysprog/svn/!svn/ver/131/trunk/testprog-sample/lio_listio_test.c
 END
 Makefile
 K 25
 svn:wc:ra_dav:version-url
-V 59
-/ws10-sysprog/svn/!svn/ver/3/trunk/testprog-sample/Makefile
+V 61
+/ws10-sysprog/svn/!svn/ver/117/trunk/testprog-sample/Makefile
 END

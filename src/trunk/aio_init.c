@@ -30,23 +30,6 @@
        - Zuruecksetzen der jeweiligen Signalbehandlungen auf ihr urspruengliches Verhalten
        - Loeschen des Botschaftskanals
 
-
-    FIXME:
-    - DONE -- Fehlerueberpruefung bei saemtlichen malloc-Aufrufen!
-    - DONE -- Entgegennahme/Ueberpruefung des Rueckgabewertes von updateCB() bei
-              Verwendung innerhalb von sighand() --> sinnvolle Reaktion!
-    - DONE -- exit(1) im unteren Drittel von aio_cleanup wirklich sinnvoll? (--> Rueckgabewert!)
-    - DONE -- Signatur von updateCB() --> ssize_t nicht mehr benoetigt!
-              --> stattdessen: lokale Variable!
-    - DONE -- Fehlerueberpruefung bei memcpy noetig???
-    - DONE -- versuche realloc() statt malloc() + free() ?
-    - SCHLUESSEL mittels ftok() ( ? file to key) "sessionsepzifisch generieren"
-    - DONE -- Zeilenbreite hinsichtlich A4-Ausdruck anpassen!
-    - DONE sighandler: exit vs. break?
-    - DONE -- aio_error.c/aio_return.c mit Debug- und Error-Funktionen versehen!
-    - DONE -- Dateibeschreibung fuer aio_init.c, aio_error.c und aio_return.c pruefen und ggf. aendern!
-    - DONE -- aio_return.c: if (predecessorCB)... ueberfluessig? (return-statements!)
-       
 ----------------------------------------------------------------------------------------*/
 
 
@@ -227,16 +210,13 @@ int updateCB(struct msgbuf *buffer)
          
             aio_pdebug("%s (%d): Leseauftrag fuer %d wird fortgesetzt\n",
                     __FILE__, __LINE__, localHead->aio_pid);
-            
             /* ehemalige Laenge der aiocb-Nutzdaten notieren */
             size_t oldSize = localHead->aio_nbytes;
-
             /* Aktualisiere Laengenangabe im Kontrollblock */
             localHead->aio_nbytes = localHead->aio_nbytes+blen; 
          
             /* Schreiben der Daten */
-            if ((localHead->aio_buf = realloc(localHead->aio_buf, localHead->aio_nbytes))
-                    == NULL)
+            if ((newBuffer = malloc(localHead->aio_nbytes)) == NULL)
             { /* Neuer Speicher konnte nicht allokiert werden */
                 
                 aio_perror("%s (%d): "
@@ -249,24 +229,41 @@ int updateCB(struct msgbuf *buffer)
             { /* Neuer Speicher wurde erfolgreich allokiert */
                     
                 /* Saeuberung des neuen Speichers */
-                if(memset(localHead->aio_buf + oldSize, 0, sizeof(newBuffer)) == NULL)
+                if(memset(newBuffer, 0, sizeof(newBuffer)) == NULL)
                 { /*Schwerwiegendes Problem in der Laufzeitumgebung */
-                	aio_perror("%s (%d): "
-                            "Fehler beim Initialisieren der neuen Speicherbloecke",
-                		    __FILE__,__LINE__);
+                	aio_perror("%s (%d): Fehler beim Initialisieren des neuen Nutzdatenspeichers",
+                		__FILE__,__LINE__);
                 		
                 	return -1;
                 }
          
-                /* Anhaengen der empfangenen Daten */
-                if (memcpy(localHead->aio_buf + oldSize,
-                            buffer->mtext+sizeof(errno)+sizeof(blen),blen) == NULL)
+                /* Sichere ggf. bereits vorhandene Pufferinhalte in den neuen Speicher*/
+                if(memcpy(newBuffer, localHead->aio_buf, oldSize) == NULL)
                 { /*Schwerwiegendes Problem in der Laufzeitumgebung */
+
+                	aio_perror("%s (%d): Fehler beim Sichern des alten Nutzdatenspeichers",
+                		__FILE__,__LINE__);
+                		
+                	return -1;
+                }
+                 
+                /* Anhaengen der empfangenen Daten */
+                if(memcpy(newBuffer+oldSize, buffer->mtext+sizeof(errno)+sizeof(blen),blen) == NULL)
+                { /*Schwerwiegendes Problem in der Laufzeitumgebung */
+
                 	aio_perror("%s (%d): Fehler beim Anhaengen der Paketdaten",
                 		__FILE__,__LINE__);
                 		
                 	return -1;
                 }
+                 
+                /* Gebe alten Speicher frei */
+                //free(localHead->aio_buf); /* gibt keinen Wert fuer Test zurueck */
+                // Bitte nicht! Aus irgendeinem Grund bringt das Operationen ueber
+                // lio_listio() zum Absturz (segfault)
+                 
+                /* Pufferadresse des CB zeigt nun auf neuen Speicher */
+                localHead->aio_buf = newBuffer;
             }
         }
         

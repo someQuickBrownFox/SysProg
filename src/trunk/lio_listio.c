@@ -102,53 +102,47 @@ int lio_listio(int mode, struct aiocb * list[], int nent, struct sigevent *sig)
         {
             aio_pdebug("%s (%d): Dispatching a control block...\n",
                        __FILE__, __LINE__);
-            switch (aicbp->aio_lio_opcode)
-            {
-                case O_READ:
-                    retval = (aio_read(aicbp) == -1) ? -1 : retval;
-                    break;
-                case O_WRITE:
-                    retval = (aio_write(aicbp) == -1) ? -1 : retval;
-                    break;
-                default:
-                    retval = -1;
-                    errno = EINVAL;
-                    return retval;
-            }
-        }
 
-        if (aicbp->aio_lio_opcode == O_READ && aio_read(aicbp) == -1)
-        {
-            if (mode == LIO_NOWAIT)
+            if (aicbp->aio_lio_opcode == O_READ && aio_read(aicbp) == -1)
             {
-                aio_pdebug("%s (%d): Inform the lio_listio() forked child, "
-                           "that one control block is not possible to be "
-                           "processed\n",
-                           __FILE__, __LINE__);
-                if (kill(cpid, SIGUSR1) == -1)
+                if (mode == LIO_NOWAIT)
                 {
-                    aio_perror("%s (%d): Failed signaling failed processing "
-                               "of an erroneous control block to the child",
+                    aio_pdebug("%s (%d): Inform the lio_listio() forked child, "
+                               "that one control block is not possible to be "
+                               "processed\n",
                                __FILE__, __LINE__);
+                    if (kill(cpid, SIGUSR1) == -1)
+                    {
+                        aio_perror("%s (%d): Failed signaling failed processing "
+                                   "of an erroneous control block to the child",
+                                   __FILE__, __LINE__);
+                    }
                 }
+                retval = -1;
             }
-            retval = -1;
-        }
-        else if (aicbp->aio_lio_opcode == O_WRITE && aio_write(aicbp) == -1)
-        {
-            if (mode == LIO_NOWAIT)
+            else if (aicbp->aio_lio_opcode == O_WRITE && aio_write(aicbp) == -1)
             {
-                aio_pdebug("%s (%d): Inform the lio_listio() forked child, that "
-                           "one control block is not possible to be processed\n",
-                           __FILE__, __LINE__);
-                if (kill(cpid, SIGUSR1) == -1)
+                if (mode == LIO_NOWAIT)
                 {
-                    aio_perror("%s (%d): Failed signaling failed processing "
-                               "of an erroneous control block to the child",
+                    aio_pdebug("%s (%d): Inform the lio_listio() forked child, that "
+                               "one control block is not possible to be processed\n",
                                __FILE__, __LINE__);
+                    if (kill(cpid, SIGUSR1) == -1)
+                    {
+                        aio_perror("%s (%d): Failed signaling failed processing "
+                                   "of an erroneous control block to the child",
+                                   __FILE__, __LINE__);
+                    }
                 }
+                retval = -1;
             }
-            retval = -1;
+            else if (aicbp->aio_lio_opcode != O_READ && aicbp->aio_lio_opcode != O_WRITE)
+            {
+                aio_pdebug("%s (%d): Invalid opcode found\n",
+                           __FILE__, __LINE__);
+                errno = EINVAL;
+                retval = -1;
+            }
         }
     }
 
