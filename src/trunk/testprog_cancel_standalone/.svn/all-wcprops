@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/ws10-sysprog/svn/!svn/ver/122/trunk/testprog_cancel_standalone
+END
+lala_write.txt
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/ws10-sysprog/svn/!svn/ver/122/trunk/testprog_cancel_standalone/lala_write.txt
+END
+lala_short.txt
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/ws10-sysprog/svn/!svn/ver/122/trunk/testprog_cancel_standalone/lala_short.txt
+END
+testcancel.c
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/ws10-sysprog/svn/!svn/ver/122/trunk/testprog_cancel_standalone/testcancel.c
+END
+lala.txt
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/ws10-sysprog/svn/!svn/ver/122/trunk/testprog_cancel_standalone/lala.txt
+END

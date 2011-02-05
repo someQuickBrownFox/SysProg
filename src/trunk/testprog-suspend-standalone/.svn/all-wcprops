@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/ws10-sysprog/svn/!svn/ver/118/trunk/testprog-suspend-standalone
+END
+main.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/ws10-sysprog/svn/!svn/ver/118/trunk/testprog-suspend-standalone/main.c
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/ws10-sysprog/svn/!svn/ver/117/trunk/testprog-suspend-standalone/Makefile
+END
